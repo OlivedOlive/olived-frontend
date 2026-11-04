@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "../styles/components.css";
+
+/* ============================================================
+   OLIVED — design tokens
+   Raw values live on :root so the ported component CSS
+   (var(--gold), var(--t-h2)…) keeps working; @theme inline maps
+   them to Tailwind utilities (bg-gold, text-mid, font-serif, text-h2…).
+   ============================================================ */
+@layer base {
+  :root {
+    /* Luxury beige palette */
+    --white: #faf8f2;
+    --off-white: #f4f0e6;
+    --warm-white: #ede8dc;
+    --cream: #e6dfd0;
+    --border: #ddd7c8;
+    --border-light: #ede8dc;
+    --charcoal: #1c1a16;
+    --dark: #13120f;
+    --mid: #6b6560;
+    --muted: #9e9890;
+    --gold: #b08d57;
+    --gold-light: #c9a96e;
+    --gold-pale: #e8d9bc;
+    --olive-drop: #b08d57;
+    --olive-drop-deep: #8a6d3d;
+    --olive-rgb: 28, 26, 22;
+    --olive-soft-rgb: 107, 101, 96;
+    --sand-rgb: 244, 240, 230;
+    --sand-soft-rgb: 237, 232, 220;
+    --sand-pale-rgb: 250, 248, 242;
+
+    /* Maison page palette (from maison.css) */
+    --iv: #f6f1e8;
+    --iv-mid: #eee8da;
+    --iv-deep: #e4dcca;
+    --bk: #0b0b0b;
+    --ch: #1a1713;
+    --gd: #b58a4a;
+    --gd-lt: #c99b58;
+    --bd: #ddd2bf;
+    --bd-lt: #eae3d5;
+    --tx-mid: #6a6258;
+    --tx-mute: #9c9488;
+
+    /* Typography — fonts are self-hosted by next/font (see app/layout.tsx) */
+    --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+    --font-body: var(--font-montserrat), system-ui, -apple-system, sans-serif;
+
+    /* Fluid type scale */
+    --t-hero: clamp(52px, 7.5vw, 110px);
+    --t-h1: clamp(40px, 5.5vw, 80px);
+    --t-h2: clamp(30px, 4vw, 60px);
+    --t-h3: clamp(24px, 3vw, 44px);
+    --t-h4: clamp(18px, 2vw, 28px);
+    --t-body-lg: 18px;
+    --t-body: 15px;
+    --t-sm: 13px;
+    --t-xs: 11px;
+
+    /* Spacing */
+    --section-v: clamp(80px, 10vw, 160px);
+    --section-vs: clamp(50px, 6vw, 100px);
+    --cont-max: 1440px;
+    --cont-pad: clamp(24px, 5vw, 80px);
+
+    /* Effects */
+    --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --t-speed: 0.55s;
+    --t-fast: 0.25s;
+    --shadow-sm: 0 2px 12px rgba(28, 26, 22, 0.05);
+    --shadow-md: 0 8px 36px rgba(28, 26, 22, 0.09);
+    --shadow-lg: 0 24px 70px rgba(28, 26, 22, 0.13);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    font-family: var(--font-body);
+    font-size: var(--t-body);
+    font-weight: 300;
+    color: var(--charcoal);
+    background: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.75;
+    letter-spacing: 0.01em;
+  }
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  /* Preflight makes form controls inherit body typography (line-height 1.75, weight 300).
+     The original design was built on browser defaults here, so restore them. */
+  button,
+  input,
+  select,
+  optgroup,
+  textarea {
+    line-height: normal;
+    letter-spacing: normal;
+    font-weight: 400;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  h1 { font-size: var(--t-h1); }
+  h2 { font-size: var(--t-h2); }
+  h3 { font-size: var(--t-h3); }
+  h4 { font-size: var(--t-h4); }
+}
+
+@theme inline {
+  --color-white: var(--white);
+  --color-off-white: var(--off-white);
+  --color-warm-white: var(--warm-white);
+  --color-cream: var(--cream);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-charcoal: var(--charcoal);
+  --color-dark: var(--dark);
+  --color-mid: var(--mid);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-pale: var(--gold-pale);
+  --color-sand-pale: rgb(var(--sand-pale-rgb));
+
+  --font-serif: var(--font-display);
+  --font-sans: var(--font-body);
+
+  --text-hero: var(--t-hero);
+  --text-h1: var(--t-h1);
+  --text-h2: var(--t-h2);
+  --text-h3: var(--t-h3);
+  --text-h4: var(--t-h4);
+  --text-body-lg: var(--t-body-lg);
+  --text-body: var(--t-body);
+  --text-small: var(--t-sm);
+  --text-micro: var(--t-xs);
+
+  --shadow-soft: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+
+  --ease-luxe: var(--ease);
+}
+
+/* The site's own container (Tailwind's default `container` uses breakpoint widths). */
+@utility container {
+  max-width: var(--cont-max);
+  margin-inline: auto;
+  padding-inline: var(--cont-pad);
+}
