@@ -123,8 +123,9 @@ export default function PackagedProductsPage() {
                     src={orzetaPackshot}
                     alt="ORZETA packaged olive oil bottle"
                     className="orzeta-packshot"
-                    sizes="(max-width: 900px) 70vw, 375px"
-                    preload
+                    sizes="(max-width: 900px) 310px, 430px"
+                    loading="eager"
+                    fetchPriority="high"
                   />
                   <div className="orzeta-stage-card orzeta-stage-card-bottom">
                     <span className="orzeta-stage-card-label">Shelf presence</span>

@@ -51,7 +51,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${montserrat.variable}`} data-scroll-behavior="smooth">
-      <body>
+      <body suppressHydrationWarning>
         {/* Without JavaScript, scroll-reveal content must still be visible. */}
         <noscript>
           <style>{`.reveal,.fade-in{opacity:1!important;transform:none!important}`}</style>
