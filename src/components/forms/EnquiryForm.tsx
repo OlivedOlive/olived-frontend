@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowRight } from "@/components/icons";
+import type { Dictionary } from "@/i18n/dictionaries/en";
 import {
   submitEnquiry,
   validateEnquiry,
@@ -12,30 +13,26 @@ import {
 } from "@/lib/enquiry";
 import { useBulkPrefill } from "./BulkPrefill";
 
-const VOLUME_RANGES = ["Under 5 MT", "5 – 20 MT", "20 – 100 MT", "100 – 500 MT", "500 MT +"];
+type FormText = Dictionary["form"];
+type OptionValue = keyof FormText["options"];
+
+// Option values are sent to the backend in English, so the sales email reads the same
+// whatever language the buyer used; only the visible labels are translated.
+const VOLUME_RANGES: OptionValue[] = ["Under 5 MT", "5 – 20 MT", "20 – 100 MT", "100 – 500 MT", "500 MT +"];
+const OIL_CATEGORIES: OptionValue[] = ["Extra Virgin Olive Oil", "Not sure yet"];
+const ORGANIC_PREFERENCES: OptionValue[] = ["Conventional", "Organic", "No preference"];
+const FORMATS: OptionValue[] = ["Flexitank", "IBC 1000L", "Food-Grade Drums", "Not sure yet"];
+
+const BUTTON: Record<EnquirySource, string> = {
+  home: "btn btn-gold",
+  contact: "btn btn-primary",
+  bulk: "btn btn-gold",
+};
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; mailed: boolean } | { kind: "error"; message: string };
 
-const COPY: Record<EnquirySource, { submit: string; note: string; button: string }> = {
-  home: {
-    submit: "Receive My Export Proposal",
-    note: "Confidential enquiry · No commitment · Response within 24 business hours",
-    button: "btn btn-gold",
-  },
-  contact: {
-    submit: "Send Request",
-    note: "We respond within 24 hours · All enquiries treated with strict confidentiality",
-    button: "btn btn-primary",
-  },
-  bulk: {
-    submit: "Submit Bulk Enquiry",
-    note: "Confidential enquiry · Response within 24 business hours",
-    button: "btn btn-gold",
-  },
-};
-
 /** One form, three variants — matching the three forms of the static site. */
-export function EnquiryForm({ source }: { source: EnquirySource }) {
+export function EnquiryForm({ source, t }: { source: EnquirySource; t: FormText }) {
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
   const onDark = source !== "contact";
@@ -85,7 +82,7 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
       payload.targetSpec = str("targetSpec");
     }
 
-    const clientErrors = validateEnquiry(payload);
+    const clientErrors = validateEnquiry(payload, t.errors);
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
       setStatus({ kind: "idle" });
@@ -103,9 +100,15 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
       prefill?.set({ oilCategory: "", organicPreference: "", format: "" });
       setStatus({ kind: "sent", mailed: result.mailed });
     } else {
-      setErrors(result.fields);
-      setStatus({ kind: "error", message: result.error });
-      focusFirstError(form, result.fields);
+      // The backend answers in English; show our own translated message for each flagged field.
+      const translated: FieldErrors = {};
+      for (const key of Object.keys(result.fields) as (keyof FieldErrors)[]) {
+        translated[key] = key in t.errors ? t.errors[key as keyof FormText["errors"]] : result.fields[key];
+      }
+      setErrors(translated);
+      const message = Object.keys(translated).length > 0 ? t.errors.server : result.network ? t.errors.network : result.error;
+      setStatus({ kind: "error", message });
+      focusFirstError(form, translated);
     }
   }
 
@@ -125,12 +128,19 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
 
   const errorText = (name: keyof EnquiryPayload) =>
     errors[name] ? (
-      <p id={id(`${name}-error`)} className={`mt-1.5 text-small ${onDark ? "text-[#f0a493]" : "text-[#a8432f]"}`}>
+      <p id={id(`${name}-error`)} className={`mt-1.5 text-small ${onDark ? "text-[#f0a493]" : "form-error-text"}`}>
         {errors[name]}
       </p>
     ) : null;
 
-  const copy = COPY[source];
+  const options = (values: OptionValue[]) =>
+    values.map((v) => (
+      <option key={v} value={v}>
+        {t.options[v]}
+      </option>
+    ));
+
+  const copy = t.variants[source];
   const sending = status.kind === "sending";
 
   if (status.kind === "sent") {
@@ -139,18 +149,16 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
         ref={successRef}
         tabIndex={-1}
         role="status"
-        className={`scroll-mt-[120px] border p-10 text-center outline-none ${onDark ? "border-sand-pale/25" : "border-border"}`}
+        className={`scroll-mt-[120px] rounded-[18px] border p-10 text-center outline-none ${onDark ? "border-sand-pale/25" : "border-border"}`}
       >
-        <p className="font-serif text-h4">Thank you — your enquiry has been received.</p>
-        <p className={`mt-3 text-small ${onDark ? "text-sand-pale/70" : "text-mid"}`}>
-          Our export team will respond within 24 business hours.
-        </p>
+        <p className="font-serif text-h4">{t.thanks}</p>
+        <p className={`mt-3 text-small ${onDark ? "text-sand-pale/70" : "text-mid"}`}>{t.thanksText}</p>
         <button
           type="button"
           className={`mt-8 ${onDark ? "btn btn-outline-light" : "btn btn-outline"}`}
           onClick={() => setStatus({ kind: "idle" })}
         >
-          Send another enquiry
+          {t.another}
         </button>
       </div>
     );
@@ -165,54 +173,69 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
         tabIndex={-1}
         autoComplete="off"
         aria-hidden="true"
-        className="absolute -left-[9999px] h-px w-px opacity-0"
+        // Hidden in place: an off-screen offset would widen right-to-left pages.
+        className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0 [clip-path:inset(50%)]"
       />
 
       <div className="form-grid">
-        <Field label="Full Name" htmlFor={id("fullName")} required>
-          <input className="form-control" type="text" placeholder="John Smith" autoComplete="name" {...fieldProps("fullName")} />
+        <Field label={t.fullName} htmlFor={id("fullName")} required>
+          <input className="form-control" type="text" placeholder={t.fullNamePlaceholder} autoComplete="name" {...fieldProps("fullName")} />
           {errorText("fullName")}
         </Field>
 
-        <Field label="Company" htmlFor={id("company")} required>
-          <input className="form-control" type="text" placeholder="Your company" autoComplete="organization" {...fieldProps("company")} />
+        <Field label={t.company} htmlFor={id("company")} required>
+          <input className="form-control" type="text" placeholder={t.companyPlaceholder} autoComplete="organization" {...fieldProps("company")} />
           {errorText("company")}
         </Field>
 
-        <Field label="Business Email" htmlFor={id("email")} required>
-          <input className="form-control" type="email" placeholder="you@company.com" autoComplete="email" {...fieldProps("email")} />
+        <Field label={t.email} htmlFor={id("email")} required>
+          <input
+            className="form-control"
+            type="email"
+            dir="ltr"
+            placeholder={t.emailPlaceholder}
+            autoComplete="email"
+            {...fieldProps("email")}
+          />
           {errorText("email")}
         </Field>
 
         {source === "contact" && (
-          <Field label="Phone" htmlFor={id("phone")}>
-            <input className="form-control" type="tel" placeholder="+1 000 000 0000" autoComplete="tel" {...fieldProps("phone")} />
+          <Field label={t.phone} htmlFor={id("phone")}>
+            <input
+              className="form-control"
+              type="tel"
+              dir="ltr"
+              placeholder={t.phonePlaceholder}
+              autoComplete="tel"
+              {...fieldProps("phone")}
+            />
             {errorText("phone")}
           </Field>
         )}
 
         <Field
-          label={source === "bulk" ? "Destination Country" : "Country / Destination"}
+          label={source === "bulk" ? t.destinationCountry : t.country}
           htmlFor={id("country")}
           required
           full={source === "contact"}
         >
-          <input className="form-control" type="text" placeholder="e.g. Germany, UAE, USA…" autoComplete="country-name" {...fieldProps("country")} />
+          <input className="form-control" type="text" placeholder={t.countryPlaceholder} autoComplete="country-name" {...fieldProps("country")} />
           {errorText("country")}
         </Field>
 
         {source === "home" && (
           <fieldset className="form-group form-full" data-field="interests">
             {/* A legend sits outside the fieldset's flex gap, so it gets the 6px explicitly. */}
-            <legend className="form-label mb-1.5">Sourcing Need</legend>
+            <legend className="form-label mb-1.5">{t.sourcingNeed}</legend>
             <div className="form-checkbox-group">
               <label className="form-checkbox">
                 <input type="radio" name="interest" value="bulk" />
-                <span>Bulk Olive Oil</span>
+                <span>{t.interests.bulk}</span>
               </label>
               <label className="form-checkbox">
                 <input type="radio" name="interest" value="packaged" />
-                <span>Packaged Collection</span>
+                <span>{t.interests.packaged}</span>
               </label>
             </div>
           </fieldset>
@@ -225,14 +248,14 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
             aria-describedby={errors.interests ? id("interests-error") : undefined}
           >
             <legend className="form-label mb-1.5">
-              Enquiry Type <span className="text-gold">*</span>
+              {t.enquiryType} <span className="text-gold">*</span>
             </legend>
             <div className="form-checkbox-group">
               {(
                 [
-                  ["bulk", "Bulk Olive Oil"],
-                  ["packaged", "Packaged / ORZETA"],
-                  ["distributor", "Become a Distributor"],
+                  ["bulk", t.interests.bulk],
+                  ["packaged", t.interests.packagedOrzeta],
+                  ["distributor", t.interests.distributor],
                 ] as const
               ).map(([value, label]) => (
                 <label key={value} className="form-checkbox">
@@ -254,80 +277,55 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
 
         {source === "bulk" && (
           <>
-            <Field label="Olive Oil Category" htmlFor={id("oilCategory")} required>
-              <select
-                className="form-control"
-                {...fieldProps("oilCategory")}
-                {...controlled(prefill, "oilCategory")}
-              >
-                <option value="">Select a category</option>
-                <option>Extra Virgin Olive Oil</option>
-                <option>Not sure yet</option>
+            <Field label={t.oilCategory} htmlFor={id("oilCategory")} required>
+              <select className="form-control" {...fieldProps("oilCategory")} {...controlled(prefill, "oilCategory")}>
+                <option value="">{t.selectCategory}</option>
+                {options(OIL_CATEGORIES)}
               </select>
               {errorText("oilCategory")}
             </Field>
 
-            <Field label="Conventional or Organic" htmlFor={id("organicPreference")} required>
-              <select
-                className="form-control"
-                {...fieldProps("organicPreference")}
-                {...controlled(prefill, "organicPreference")}
-              >
-                <option value="">Select an option</option>
-                <option>Conventional</option>
-                <option>Organic</option>
-                <option>No preference</option>
+            <Field label={t.organicPreference} htmlFor={id("organicPreference")} required>
+              <select className="form-control" {...fieldProps("organicPreference")} {...controlled(prefill, "organicPreference")}>
+                <option value="">{t.selectOption}</option>
+                {options(ORGANIC_PREFERENCES)}
               </select>
               {errorText("organicPreference")}
             </Field>
 
-            <Field label="Estimated Volume" htmlFor={id("volume")} required>
-              <input className="form-control" type="text" placeholder="Approximate quantity" {...fieldProps("volume")} />
+            <Field label={t.volume} htmlFor={id("volume")} required>
+              <input className="form-control" type="text" placeholder={t.volumePlaceholder} {...fieldProps("volume")} />
               {errorText("volume")}
             </Field>
 
-            <Field label="Preferred Format" htmlFor={id("format")} required>
+            <Field label={t.preferredFormat} htmlFor={id("format")} required>
               <select className="form-control" {...fieldProps("format")} {...controlled(prefill, "format")}>
-                <option value="">Select a format</option>
-                <option>Flexitank</option>
-                <option>IBC 1000L</option>
-                <option>Food-Grade Drums</option>
-                <option>Not sure yet</option>
+                <option value="">{t.selectFormat}</option>
+                {options(FORMATS)}
               </select>
               {errorText("format")}
             </Field>
 
-            <Field label="Target Specification or Application" htmlFor={id("targetSpec")} required full>
-              <input
-                className="form-control"
-                type="text"
-                placeholder="e.g. intended use or specification target"
-                {...fieldProps("targetSpec")}
-              />
+            <Field label={t.targetSpec} htmlFor={id("targetSpec")} required full>
+              <input className="form-control" type="text" placeholder={t.targetSpecPlaceholder} {...fieldProps("targetSpec")} />
               {errorText("targetSpec")}
             </Field>
           </>
         )}
 
         {source !== "bulk" && (
-          <Field label={source === "contact" ? "Estimated Volume / Year" : "Estimated Volume"} htmlFor={id("volume")} full>
+          <Field label={source === "contact" ? t.volumePerYear : t.volume} htmlFor={id("volume")} full>
             <select className="form-control" defaultValue="" {...fieldProps("volume")}>
-              <option value="">Select a range</option>
-              {VOLUME_RANGES.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
+              <option value="">{t.selectRange}</option>
+              {options(VOLUME_RANGES)}
             </select>
           </Field>
         )}
 
-        <Field label="Message" htmlFor={id("message")} required={source === "bulk"} full>
+        <Field label={t.message} htmlFor={id("message")} required={source === "bulk"} full>
           <textarea
             className="form-control"
-            placeholder={
-              source === "bulk"
-                ? "Tell us more about your project…"
-                : "Tell us about your project, grade preferences or packaging requirements…"
-            }
+            placeholder={source === "bulk" ? t.messagePlaceholderBulk : t.messagePlaceholder}
             {...fieldProps("message")}
           />
           {errorText("message")}
@@ -335,12 +333,12 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
 
         <div className="form-full">
           {status.kind === "error" && (
-            <p role="alert" className={`mb-4 text-center text-small ${onDark ? "text-[#f0a493]" : "text-[#a8432f]"}`}>
+            <p role="alert" className={`mb-4 text-center text-small ${onDark ? "text-[#f0a493]" : "form-error-text"}`}>
               {status.message}
             </p>
           )}
-          <button type="submit" className={`${copy.button} w-full justify-center disabled:opacity-60`} disabled={sending}>
-            {sending ? "Sending…" : copy.submit}
+          <button type="submit" className={`${BUTTON[source]} w-full justify-center disabled:opacity-60`} disabled={sending}>
+            {sending ? t.sending : copy.submit}
             {!sending && <ArrowRight />}
           </button>
           <p className={`mt-3.5 text-center text-micro tracking-[0.04em] ${onDark ? "text-sand-pale/60" : "text-muted"}`}>
@@ -352,10 +350,7 @@ export function EnquiryForm({ source }: { source: EnquirySource }) {
   );
 }
 
-function controlled(
-  prefill: ReturnType<typeof useBulkPrefill>,
-  key: "oilCategory" | "organicPreference" | "format",
-) {
+function controlled(prefill: ReturnType<typeof useBulkPrefill>, key: "oilCategory" | "organicPreference" | "format") {
   if (!prefill) return { defaultValue: "" };
   return {
     value: prefill.values[key],

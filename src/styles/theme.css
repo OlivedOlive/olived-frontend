@@ -1,0 +1,257 @@
+/*
+ * OLIVED — header controls, dark theme, Arabic typography and right-to-left layout.
+ * Loaded last (components layer), so it refines components.css and modern.css.
+ */
+@layer components {
+
+/* ===================== HEADER CONTROLS ===================== */
+
+.lang-switch { gap: 2px; }
+.lang-item { display: inline-flex; align-items: center; gap: 2px; }
+.lang-sep { margin: 0 4px; }
+.lang-current { font-weight: 600; }
+.lang-link {
+  opacity: 0.62;
+  padding: 4px 2px;
+  transition: opacity var(--t-fast) ease, color var(--t-fast) ease;
+}
+.lang-link:hover { opacity: 1; color: var(--gold-light); }
+.lang-switch [lang="ar"] { font-family: var(--font-plex-arabic), var(--font-body); font-size: 13px; letter-spacing: 0; }
+
+/* The full-name variant inside the mobile menu */
+.lang-switch-menu {
+  margin-top: 28px;
+  color: var(--ink);
+  text-shadow: none;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.lang-switch-menu .lang-link { opacity: 0.6; }
+@media (max-width: 768px) {
+  .lang-switch-menu { display: flex; }
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--on-dark);
+  border: 1px solid rgba(var(--sand-pale-rgb), 0.35);
+  transition: background var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease, transform 0.4s var(--ease-spring);
+  cursor: pointer;
+}
+.theme-toggle:hover { background: rgba(var(--sand-pale-rgb), 0.14); transform: rotate(-12deg); }
+.site-header.is-scrolled .theme-toggle,
+.site-header.site-header-light .theme-toggle { color: var(--ink); border-color: rgba(var(--olive-rgb), 0.18); }
+.site-header.is-scrolled .theme-toggle:hover,
+.site-header.site-header-light .theme-toggle:hover { background: rgba(var(--olive-rgb), 0.06); }
+
+/* Show the icon of the theme you would switch TO */
+.theme-icon-sun { display: none; }
+[data-theme="dark"] .theme-icon-sun { display: block; }
+[data-theme="dark"] .theme-icon-moon { display: none; }
+
+/* Open mobile menu: the header sits on the menu's own background, so use the dark logo and icons
+   (in dark mode the menu background is dark and the light versions already fit). */
+[data-theme="light"] .site-header.is-menu-open .logo-light { display: none; }
+[data-theme="light"] .site-header.is-menu-open .logo-dark { display: block; }
+[data-theme="light"] .site-header.is-menu-open .mobile-toggle span { background: var(--ink); }
+[data-theme="light"] .site-header.is-menu-open .theme-toggle { color: var(--ink); border-color: rgba(var(--olive-rgb), 0.18); }
+.site-header.is-menu-open .header-inner { background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none; }
+
+/* Light-page form errors (dark bands use their own colour) */
+.form-error-text { color: #a8432f; }
+
+/* ===================== DARK THEME =====================
+   The inline script in app/[lang]/layout.tsx sets data-theme before first paint,
+   from the saved choice or else the device setting, so one selector covers both. */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #12110e;
+  --ink: #ece5d6;
+  --off-white: #1a1814;
+  --warm-white: #201d18;
+  --cream: #29251f;
+  --border: #3a342b;
+  --border-light: #2b2721;
+  --mid: #b4ab9c;
+  --muted: #8c8477;
+  --olive-rgb: 236, 229, 214;
+  --olive-soft-rgb: 180, 171, 156;
+  --iv: #14130f;
+  --iv-mid: #1b1915;
+  --iv-deep: #24211b;
+  --bd: #3a342b;
+  --bd-lt: #2b2721;
+  --tx-mid: #b4ab9c;
+  --tx-mute: #8c8477;
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 36px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+/* Header: dark glass pill, white logo */
+[data-theme="dark"] .site-header.is-scrolled .header-inner {
+  background: rgba(18, 17, 14, 0.78);
+  border-color: rgba(236, 229, 214, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+[data-theme="dark"] .site-header.is-scrolled .logo-light,
+[data-theme="dark"] .site-header.site-header-light .logo-light { display: block; }
+[data-theme="dark"] .site-header.is-scrolled .logo-dark,
+[data-theme="dark"] .site-header.site-header-light .logo-dark { display: none; }
+[data-theme="dark"] .site-header.is-scrolled .header-actions .btn-outline-light,
+[data-theme="dark"] .site-header.site-header-light .header-actions .btn-outline-light {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--night);
+}
+
+/* Dark buttons would vanish on a dark page: invert them */
+[data-theme="dark"] .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--night); }
+[data-theme="dark"] .btn-primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+[data-theme="dark"] .btn-outline:hover { background: var(--ink); color: var(--night); }
+
+/* Certifier logos are dark artwork: keep them on a light plate */
+[data-theme="dark"] .cert-badge-plate { background: #ede8dc; }
+
+/* Cards and tiles that were translucent white */
+[data-theme="dark"] .card,
+[data-theme="dark"] .export-layout .feature-item { background: rgba(255, 255, 255, 0.03); }
+[data-theme="dark"] .card:hover,
+[data-theme="dark"] .export-layout .feature-item:hover,
+[data-theme="dark"] .bento-tile:hover { background: var(--warm-white); }
+[data-theme="dark"] .bento-hero { border-color: var(--border); }
+
+/* Photos read a touch bright against a dark page */
+[data-theme="dark"] .about-image img,
+[data-theme="dark"] .split-image img { filter: brightness(0.9); }
+
+[data-theme="dark"] ::selection { background: var(--gold); color: var(--night); }
+[data-theme="dark"] .form-error-text { color: #f0a493; }
+[data-theme="dark"] input[type="checkbox"],
+[data-theme="dark"] input[type="radio"] { accent-color: var(--gold); }
+
+/* ===================== ARABIC & RIGHT-TO-LEFT ===================== */
+
+html[lang="ar"] {
+  --font-display: var(--font-amiri), "Amiri", Georgia, serif;
+  --font-body: var(--font-plex-arabic), "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+/* Letter-spacing breaks the joins between Arabic letters */
+html[lang="ar"] body,
+html[lang="ar"] body * { letter-spacing: normal !important; }
+html[lang="ar"] body { line-height: 1.9; font-weight: 400; }
+/* Arabic has no true italics: emphasis is carried by colour instead */
+html[lang="ar"] em { font-style: normal; }
+html[lang="ar"] :is(h1, h2, h3, h4, .hero-title, .mn-hero-title, .orzeta-title, .bento-hero-label, .journey-fact) {
+  line-height: 1.35;
+}
+html[lang="ar"] .hero-title { font-size: clamp(48px, 5.6vw, 92px); line-height: 1.25; }
+html[lang="ar"] :is(.btn, .text-link, .nav-item, .eyebrow, .eyebrow-dark, .hero-eyebrow, .hero-fact dt, .bento-label,
+  .journey-step h3, .solution-card-tag, .solution-card-link, .form-label) {
+  font-size: max(13px, 1em);
+  text-transform: none;
+}
+html[lang="ar"] .marquee-track li { font-style: normal; }
+
+/* Arrows point the way you read */
+[dir="rtl"] :is(.btn, .text-link, .about-link, .solution-card-link, .mn-text-link) svg,
+[dir="rtl"] .mn-arrow { transform: scaleX(-1); }
+[dir="rtl"] .btn:hover svg,
+[dir="rtl"] .text-link:hover svg { transform: scaleX(-1) translateX(4px); }
+[dir="rtl"] .mn-arrow { display: inline-block; }
+
+/* Eyebrow rule sits before the text on the reading side */
+[dir="rtl"] :is(.eyebrow, .eyebrow-dark)::before { margin-right: 0; margin-left: 12px; }
+
+/* Gradients that darken the text side of a photo */
+[dir="rtl"] .hero-overlay {
+  background:
+    linear-gradient(270deg, rgba(19, 18, 15, 0.7) 0%, rgba(19, 18, 15, 0.35) 50%, rgba(19, 18, 15, 0.1) 100%),
+    linear-gradient(0deg, rgba(19, 18, 15, 0.65) 0%, rgba(19, 18, 15, 0) 35%);
+}
+[dir="rtl"] .fullbleed-overlay {
+  background: linear-gradient(270deg, rgba(19, 18, 15, 0.78) 0%, rgba(19, 18, 15, 0.35) 60%, rgba(19, 18, 15, 0.15) 100%);
+}
+
+/* Hero facts strip */
+[dir="rtl"] .hero-fact + .hero-fact {
+  padding-left: 0;
+  padding-right: 28px;
+  border-left: none;
+  border-right: 1px solid rgba(var(--sand-pale-rgb), 0.14);
+}
+
+/* Marquee: keep the scrolling track left-to-right; each item still reads right-to-left */
+[dir="rtl"] .provenance-marquee { direction: ltr; }
+[dir="rtl"] .marquee-track li { direction: rtl; }
+
+/* Sourcing card numerals move to the opposite corner */
+[dir="rtl"] .sourcing-index { right: auto; left: 36px; }
+
+
+/* Traceability chain runs right to left */
+[dir="rtl"] .journey-steps::before { background: linear-gradient(270deg, var(--gold) 0%, rgba(176, 141, 87, 0.15) 100%); }
+[dir="rtl"] .journey-step { padding: 44px 0 0 28px; }
+[dir="rtl"] .journey-step::before { left: auto; right: 0; }
+[dir="rtl"] .journey-section::before { right: auto; left: -20vw; }
+
+/* Header pill padding mirrors */
+[dir="rtl"] .site-header.is-scrolled .header-inner { padding: 8px 26px 8px 10px; }
+[dir="rtl"] .site-header.is-scrolled .mobile-toggle { margin-right: 0; margin-left: 12px; }
+
+/* WhatsApp button moves to the reading-end corner */
+[dir="rtl"] .whatsapp-float { right: auto; left: 24px; }
+
+@media (max-width: 1024px) {
+  [dir="rtl"] .hero-fact:nth-child(3) { padding-right: 0; border-right: none; }
+  [dir="rtl"] .journey-steps { padding-left: 0; padding-right: 36px; }
+  [dir="rtl"] .journey-steps::before { left: auto; right: 7px; background: linear-gradient(180deg, var(--gold), rgba(176, 141, 87, 0.15)); }
+  [dir="rtl"] .journey-step { padding: 0 0 40px; }
+  [dir="rtl"] .journey-step::before { right: -36px; left: auto; }
+  [dir="rtl"] .site-header.is-scrolled .header-inner { padding: 8px 20px 8px 8px; }
+}
+@media (max-width: 768px) {
+  [dir="rtl"] .hero-fact + .hero-fact { padding-right: 16px; }
+  [dir="rtl"] .hero-fact:nth-child(3) { padding-right: 0; }
+}
+
+/* Packaged page (ORZETA) in dark mode.
+   The product "stages" stay light, like a lightbox, because the packshot photo has a
+   beige backdrop; inside them the light-theme colours are restored. Surfaces around
+   them, which were built from translucent sand, turn dark. */
+[data-theme="dark"] :is(.orzeta-stage, .orzeta-editorial-stage) {
+  --ink: #1c1a16;
+  --mid: #6b6560;
+  --muted: #9e9890;
+  --olive-rgb: 28, 26, 22;
+  color: var(--ink);
+}
+[data-theme="dark"] .orzeta-hero-shell,
+[data-theme="dark"] .orzeta-product-card-featured,
+[data-theme="dark"] .orzeta-editorial-panel {
+  background: linear-gradient(180deg, #1d1a15 0%, #17150f 100%);
+}
+[data-theme="dark"] .orzeta-hero-footer { background: var(--border-light); }
+[data-theme="dark"] .orzeta-hero-footer-item,
+[data-theme="dark"] .orzeta-note-card {
+  background: rgba(255, 255, 255, 0.03);
+}
+[data-theme="dark"] .orzeta-hero-section {
+  background:
+    radial-gradient(circle at top center, rgba(176, 141, 87, 0.12) 0%, rgba(176, 141, 87, 0) 32%),
+    linear-gradient(180deg, var(--off-white) 0%, var(--paper) 100%);
+}
+[data-theme="dark"] .orzeta-product-card:not(.orzeta-product-card-dark) .orzeta-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+  color: var(--gold-light);
+}
+
+}

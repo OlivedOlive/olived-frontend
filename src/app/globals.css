@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "../styles/components.css";
+@import "../styles/modern.css";
+@import "../styles/theme.css";
 
 /* ============================================================
    OLIVED — design tokens
@@ -30,6 +32,13 @@
     --sand-rgb: 244, 240, 230;
     --sand-soft-rgb: 237, 232, 220;
     --sand-pale-rgb: 250, 248, 242;
+
+    /* Colour roles. Light and dark themes swap these (see styles/theme.css);
+       --on-dark and --night stay the same, for text and sections that are always dark. */
+    --paper: var(--white);
+    --ink: var(--charcoal);
+    --on-dark: #faf8f2;
+    --night: #1c1a16;
 
     /* Maison page palette (from maison.css) */
     --iv: #f6f1e8;
@@ -84,8 +93,8 @@
     font-family: var(--font-body);
     font-size: var(--t-body);
     font-weight: 300;
-    color: var(--charcoal);
-    background: var(--white);
+    color: var(--ink);
+    background: var(--paper);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

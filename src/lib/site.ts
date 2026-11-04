@@ -17,13 +17,14 @@ export const site = {
 
 export const addressLine = `${site.address.street}, ${site.address.city}, ${site.address.country}`;
 
+/** Labels come from the dictionary (common.nav[key]); hrefs are prefixed with the language. */
 export const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/maison", label: "Maison" },
-  { href: "/quality", label: "Quality" },
-  { href: "/bulk-olive-oil", label: "Bulk Oil" },
-  { href: "/packaged-products", label: "Packaged" },
-  { href: "/contact", label: "Contact" },
+  { href: "/", key: "home" },
+  { href: "/maison", key: "maison" },
+  { href: "/quality", key: "quality" },
+  { href: "/bulk-olive-oil", key: "bulk" },
+  { href: "/packaged-products", key: "packaged" },
+  { href: "/contact", key: "contact" },
 ] as const;
 
 /** Pages without a dark hero image use the light header variant. */

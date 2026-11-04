@@ -24,7 +24,7 @@ export type FieldErrors = Partial<Record<keyof EnquiryPayload | "form", string>>
 
 export type SubmitResult =
   | { ok: true; mailed: boolean }
-  | { ok: false; error: string; fields: FieldErrors };
+  | { ok: false; error: string; fields: FieldErrors; network: boolean };
 
 const FALLBACK = "We could not send your enquiry. Please try again, or email Contact@olived.tn.";
 
@@ -37,7 +37,7 @@ export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResu
       body: JSON.stringify(payload),
     });
   } catch {
-    return { ok: false, error: FALLBACK, fields: {} };
+    return { ok: false, error: FALLBACK, fields: {}, network: true };
   }
 
   let data: { success?: boolean; mailed?: boolean; error?: string; fields?: FieldErrors } = {};
@@ -48,28 +48,33 @@ export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResu
   }
 
   if (res.ok && data.success) return { ok: true, mailed: Boolean(data.mailed) };
-  return { ok: false, error: data.error ?? FALLBACK, fields: data.fields ?? {} };
+  return { ok: false, error: data.error ?? FALLBACK, fields: data.fields ?? {}, network: !data.error };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Mirrors the backend rules so most mistakes are caught before a round trip. */
-export function validateEnquiry(p: EnquiryPayload): FieldErrors {
-  const errors: FieldErrors = {};
-  if (!p.fullName) errors.fullName = "Full name is required";
-  if (!p.company) errors.company = "Company is required";
-  if (!p.email || !EMAIL_RE.test(p.email)) errors.email = "A valid email is required";
-  if (!p.country) errors.country = "Country is required";
+export type ValidationMessages = Record<
+  "fullName" | "company" | "email" | "country" | "interests" | "oilCategory" | "organicPreference" | "volume" | "format" | "targetSpec" | "message",
+  string
+>;
 
-  if (p.source === "contact" && !p.interests?.length) errors.interests = "Select at least one enquiry type";
+/** Mirrors the backend rules so most mistakes are caught before a round trip. Messages come from the dictionary. */
+export function validateEnquiry(p: EnquiryPayload, m: ValidationMessages): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!p.fullName) errors.fullName = m.fullName;
+  if (!p.company) errors.company = m.company;
+  if (!p.email || !EMAIL_RE.test(p.email)) errors.email = m.email;
+  if (!p.country) errors.country = m.country;
+
+  if (p.source === "contact" && !p.interests?.length) errors.interests = m.interests;
 
   if (p.source === "bulk") {
-    if (!p.oilCategory) errors.oilCategory = "Olive oil category is required";
-    if (!p.organicPreference) errors.organicPreference = "Select conventional or organic";
-    if (!p.volume) errors.volume = "Estimated volume is required";
-    if (!p.format) errors.format = "Preferred format is required";
-    if (!p.targetSpec) errors.targetSpec = "Target specification is required";
-    if (!p.message) errors.message = "Message is required";
+    if (!p.oilCategory) errors.oilCategory = m.oilCategory;
+    if (!p.organicPreference) errors.organicPreference = m.organicPreference;
+    if (!p.volume) errors.volume = m.volume;
+    if (!p.format) errors.format = m.format;
+    if (!p.targetSpec) errors.targetSpec = m.targetSpec;
+    if (!p.message) errors.message = m.message;
   }
   return errors;
 }

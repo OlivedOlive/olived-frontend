@@ -19,7 +19,16 @@ export function PageHero({
   return (
     <section className={className ? `page-hero ${className}` : "page-hero"}>
       <div className="page-hero-bg">
-        <Image src={image} alt="" fill preload sizes="100vw" className="object-cover" placeholder="blur" />
+        <Image
+          src={image}
+          alt=""
+          fill
+          loading="eager"
+          fetchPriority="high"
+          sizes="100vw"
+          className="object-cover"
+          placeholder="blur"
+        />
       </div>
       <div className="container">
         <div className="page-hero-content">
