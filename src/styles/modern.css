@@ -41,14 +41,6 @@ body::before {
 .mobile-nav-overlay.is-open { transform: none; clip-path: inset(0 0 0 0); }
 html, body { overflow-x: clip; }
 
-/* ---- Reveal: a soft blur-to-sharp entrance ---- */
-.reveal {
-  filter: blur(6px);
-  transition: opacity 0.9s var(--ease-spring), transform 0.9s var(--ease-spring), filter 0.9s var(--ease-spring);
-}
-.reveal.is-visible { filter: none; }
-@media (prefers-reduced-motion: reduce) { .reveal { filter: none; } }
-
 /* ---- Editorial eyebrows: a short gold rule before the label ---- */
 .eyebrow-dark::before,
 .eyebrow::before {

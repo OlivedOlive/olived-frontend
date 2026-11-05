@@ -12,18 +12,27 @@ The OLIVED website: Next.js 16 (App Router), TypeScript and Tailwind CSS 4. All 
 | `npm run typecheck` | TypeScript check |
 
 Set `NEXT_PUBLIC_API_URL` in `.env.local` (see [`.env.example`](.env.example)) to the olived-backend URL.
+It is fixed at build time, so set it before `npm run build`.
+
+Security headers, including the Content-Security-Policy, are set in [`next.config.ts`](next.config.ts). If you add
+a third-party script, image or video, allow its origin there.
 
 ## Structure
 
 ```
 src/
-  app/                    one folder per page (+ layout.tsx, globals.css)
-    page.tsx              /
-    maison/               /maison
-    quality/              /quality
-    bulk-olive-oil/       /bulk-olive-oil
-    packaged-products/    /packaged-products
-    contact/              /contact
+  proxy.ts                sends / and /maison to the visitor's language (/fr, /fr/maison…)
+  app/
+    [lang]/               root layout + one folder per page, under /en, /fr and /ar
+      page.tsx            /en
+      maison/             /en/maison
+      quality/            /en/quality
+      bulk-olive-oil/     /en/bulk-olive-oil
+      packaged-products/  /en/packaged-products
+      contact/            /en/contact
+    global-not-found.tsx  404 page, in all three languages
+    robots.ts, sitemap.ts
+  i18n/                   languages, dictionaries (en / fr / ar) and helpers
   components/
     layout/               Header, Footer, WhatsApp button, PageEffects (scroll reveal + counters)
     forms/                EnquiryForm (home / contact / bulk variants), bulk-form pre-fill

@@ -33,7 +33,7 @@ export default async function BulkOliveOilPage() {
   const { t } = await getDictionary();
   const b = t.bulk;
 
-  // NOTE (see AUDIT.md): the organic claims and EU/USDA logos below need a certificate number,
+  // NOTE: the organic claims and EU/USDA logos below need a certificate number,
   // certifying body and validity date before publication. Kept as on the current site pending that proof.
   const gradeTabs = [
     {

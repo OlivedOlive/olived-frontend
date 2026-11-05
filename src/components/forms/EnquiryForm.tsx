@@ -106,7 +106,8 @@ export function EnquiryForm({ source, t }: { source: EnquirySource; t: FormText 
         translated[key] = key in t.errors ? t.errors[key as keyof FormText["errors"]] : result.fields[key];
       }
       setErrors(translated);
-      const message = Object.keys(translated).length > 0 ? t.errors.server : result.network ? t.errors.network : result.error;
+      const message =
+        Object.keys(translated).length > 0 ? t.errors.server : result.rateLimited ? t.errors.rateLimit : t.errors.network;
       setStatus({ kind: "error", message });
       focusFirstError(form, translated);
     }
@@ -152,7 +153,7 @@ export function EnquiryForm({ source, t }: { source: EnquirySource; t: FormText 
         className={`scroll-mt-[120px] rounded-[18px] border p-10 text-center outline-none ${onDark ? "border-sand-pale/25" : "border-border"}`}
       >
         <p className="font-serif text-h4">{t.thanks}</p>
-        <p className={`mt-3 text-small ${onDark ? "text-sand-pale/70" : "text-mid"}`}>{t.thanksText}</p>
+        <p className={`mt-3 text-small ${onDark ? "text-sand-pale/70" : "text-mid"}`}>{status.mailed ? t.thanksText : t.thanksTextPending}</p>
         <button
           type="button"
           className={`mt-8 ${onDark ? "btn btn-outline-light" : "btn btn-outline"}`}

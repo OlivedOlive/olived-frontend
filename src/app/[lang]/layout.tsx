@@ -8,7 +8,7 @@ import { RouteShell } from "@/components/layout/RouteShell";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
 import { localeDir, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { site } from "@/lib/site";
+import { openGraphDefaults, site } from "@/lib/site";
 import "../globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -60,11 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
       apple: "/apple-touch-icon.png",
     },
-    openGraph: {
-      type: "website",
-      siteName: "OLIVED",
-      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: t.meta.ogImageAlt }],
-    },
+    openGraph: openGraphDefaults(t.meta.ogImageAlt),
     twitter: { card: "summary_large_image" },
   };
 }
@@ -94,7 +90,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
       <body suppressHydrationWarning>
         {/* Without JavaScript, scroll-reveal content must still be visible. */}
         <noscript>
-          <style>{`.reveal,.fade-in{opacity:1!important;transform:none!important;filter:none!important}`}</style>
+          <style>{`.reveal,.reveal>*,.fade-in{opacity:1!important;transform:none!important}`}</style>
         </noscript>
         <RouteShell>
           <Header locale={locale} t={t.common} />

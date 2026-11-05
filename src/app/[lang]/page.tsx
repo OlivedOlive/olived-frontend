@@ -23,23 +23,27 @@ import { HeroVideo } from "@/components/widgets/HeroVideo";
 import { alternates, localizeHref } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { rich } from "@/i18n/rich";
-import { site } from "@/lib/site";
+import { openGraphDefaults, site } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getDictionary();
   return {
     alternates: alternates(locale, "/"),
-    openGraph: { title: t.meta.home.ogTitle, description: t.meta.home.ogDescription, url: localizeHref(locale, "/") },
+    openGraph: {
+      ...openGraphDefaults(t.meta.ogImageAlt),
+      title: t.meta.home.ogTitle,
+      description: t.meta.home.ogDescription,
+      url: localizeHref(locale, "/"),
+    },
   };
 }
 
-const organizationJsonLd = {
+const organizationJsonLd = (description: string) => ({
   "@context": "https://schema.org",
   "@type": "Organization",
   name: site.name,
   url: `${site.url}/`,
-  description:
-    "Family-owned Tunisian producer and exporter of extra virgin olive oil since 1916, exporting internationally since 2006 — bulk and packaged. FDA-registered facility, IOC-certified laboratory.",
+  description,
   foundingDate: "1916",
   address: {
     "@type": "PostalAddress",
@@ -54,7 +58,7 @@ const organizationJsonLd = {
     contactType: "sales",
     availableLanguage: ["en", "fr", "ar"],
   },
-};
+});
 
 // Numbers stay here; their labels come from the dictionary in the same order.
 const stats = [
@@ -78,7 +82,7 @@ export default async function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(t.meta.siteDescription)).replace(/</g, "\\u003c") }}
       />
 
       {/* ===== HERO ===== */}

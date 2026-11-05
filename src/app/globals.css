@@ -2,6 +2,7 @@
 @import "../styles/components.css";
 @import "../styles/modern.css";
 @import "../styles/theme.css";
+@import "../styles/polish.css";
 
 /* ============================================================
    OLIVED — design tokens
@@ -21,7 +22,7 @@
     --charcoal: #1c1a16;
     --dark: #13120f;
     --mid: #6b6560;
-    --muted: #9e9890;
+    --muted: #7d776f;
     --gold: #b08d57;
     --gold-light: #c9a96e;
     --gold-pale: #e8d9bc;
@@ -51,7 +52,7 @@
     --bd: #ddd2bf;
     --bd-lt: #eae3d5;
     --tx-mid: #6a6258;
-    --tx-mute: #9c9488;
+    --tx-mute: #7d776f;
 
     /* Typography — fonts are self-hosted by next/font (see app/layout.tsx) */
     --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;

@@ -38,6 +38,11 @@ const ar: Dictionary = {
     },
   },
 
+  notFound: {
+    title: "الصفحة غير موجودة",
+    text: "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    home: "العودة إلى الصفحة الرئيسية",
+  },
   common: {
     nav: {
       home: "الرئيسية",
@@ -379,7 +384,6 @@ const ar: Dictionary = {
         chips: ["250 مل", "500 مل", "750 مل"],
         note: "فخامة يومية",
         link: "احصل على المواصفات",
-        imageAlt: "قارورة ORZETA Signature",
       },
       reserve: {
         kicker: "هدايا فاخرة",
@@ -547,6 +551,7 @@ const ar: Dictionary = {
     sending: "جارٍ الإرسال…",
     thanks: "شكرًا لك — لقد استلمنا طلبك.",
     thanksText: "سيردّ عليك فريق التصدير خلال 24 ساعة عمل.",
+    thanksTextPending: "تم حفظ طلبك. إذا لم يصلك ردّ خلال 24 ساعة عمل، يرجى مراسلتنا على Contact@olived.tn.",
     another: "إرسال طلب آخر",
     errors: {
       fullName: "الاسم الكامل مطلوب",
@@ -562,6 +567,8 @@ const ar: Dictionary = {
       message: "الرسالة مطلوبة",
       network: "تعذّر إرسال طلبك. يرجى المحاولة مجددًا أو مراسلتنا على Contact@olived.tn.",
       server: "يرجى مراجعة الحقول المشار إليها.",
+      rateLimit: "عدد كبير من الطلبات من هذا الاتصال. يرجى المحاولة لاحقًا أو مراسلتنا على Contact@olived.tn.",
+      tooLong: "هذا النص طويل جدًا. يرجى اختصاره.",
     },
   },
 };

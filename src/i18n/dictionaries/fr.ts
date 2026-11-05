@@ -40,6 +40,11 @@ const fr: Dictionary = {
     },
   },
 
+  notFound: {
+    title: "Page introuvable",
+    text: "La page que vous recherchez n'existe pas ou a été déplacée.",
+    home: "Retour à l'accueil",
+  },
   common: {
     nav: {
       home: "Accueil",
@@ -383,7 +388,6 @@ const fr: Dictionary = {
         chips: ["250 ml", "500 ml", "750 ml"],
         note: "Le premium au quotidien",
         link: "Obtenir les spécifications",
-        imageAlt: "Bouteille ORZETA Signature",
       },
       reserve: {
         kicker: "Coffrets premium",
@@ -551,6 +555,7 @@ const fr: Dictionary = {
     sending: "Envoi…",
     thanks: "Merci — votre demande a bien été reçue.",
     thanksText: "Notre équipe export vous répondra sous 24 heures ouvrées.",
+    thanksTextPending: "Votre demande est bien enregistrée. Si vous n'avez pas de réponse sous 24 heures ouvrées, écrivez-nous à Contact@olived.tn.",
     another: "Envoyer une autre demande",
     errors: {
       fullName: "Le nom complet est obligatoire",
@@ -566,6 +571,8 @@ const fr: Dictionary = {
       message: "Le message est obligatoire",
       network: "Nous n'avons pas pu envoyer votre demande. Veuillez réessayer ou écrire à Contact@olived.tn.",
       server: "Veuillez vérifier les champs signalés.",
+      rateLimit: "Trop de demandes depuis cette connexion. Veuillez réessayer plus tard ou écrire à Contact@olived.tn.",
+      tooLong: "Ce texte est trop long. Veuillez le raccourcir.",
     },
   },
 };

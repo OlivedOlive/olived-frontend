@@ -1,0 +1,247 @@
+/*
+ * OLIVED — final polish: style corrections, scrolling and motion.
+ * Loaded last. Scrolling stays native (no scroll hijacking): scroll-linked effects use
+ * CSS scroll timelines, which run off the main thread, and simply don't apply in browsers
+ * without support. All motion sits behind prefers-reduced-motion: no-preference.
+ */
+@layer components {
+
+/* ===================== STYLE CORRECTIONS ===================== */
+
+/* Page heroes grow with their content, so the title never slides under the fixed header */
+.page-hero { height: auto; min-height: max(60vh, 520px); }
+.page-hero-content { padding-top: 150px; }
+@media (max-width: 768px) {
+  .page-hero { min-height: 460px; }
+  .page-hero-content { padding-top: 120px; }
+}
+
+/* Text over photos needs a little separation */
+:is(.hero-eyebrow, .page-hero-eyebrow, .mn-eyebrow, .mn-eyebrow-gold, .mn-scroll-cta, .fullbleed-text .eyebrow) {
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+}
+
+/* Maison: small labels were too faint to read */
+.mn-eyebrow { font-size: 11px; }
+.mn-scroll-cta { color: rgba(246, 241, 232, 0.85); }
+.mn-fstat-label { font-size: 10px; color: rgba(246, 241, 232, 0.66); }
+.mn-final-sub { color: rgba(246, 241, 232, 0.72); }
+.mn-btn-ghost-light { color: rgba(246, 241, 232, 0.82); border-color: rgba(246, 241, 232, 0.32); }
+
+/* Bulk: visible step numbers, readable step text, centred two-line buttons */
+.pl-step::before { color: var(--gold); }
+.pl-step p { font-size: var(--t-sm); line-height: 1.65; }
+.format-card { border-radius: var(--radius); overflow: hidden; }
+.format-card .btn { justify-content: center; text-align: center; }
+
+/* Home: two cream sections in a row doubled their spacing */
+#solutions { padding-bottom: var(--section-vs); }
+
+/* Packaged: same corners as the rest of the site */
+.orzeta-product-card,
+.orzeta-format-card,
+.orzeta-editorial-panel { border-radius: var(--radius); }
+.orzeta-note-card { border-radius: var(--radius-sm); }
+.orzeta-packshot { border-radius: var(--radius); }
+
+/* Packaged: links stay on one line; the note wraps above them when space is tight */
+.orzeta-product-card-footer { flex-wrap: wrap; align-items: center; }
+.orzeta-product-card-footer .text-link { white-space: nowrap; }
+
+/* Packaged: solid colours. The translucent title showed seams where joined Arabic letters
+   overlap, and the small labels used a fixed grey that vanished in dark mode. */
+.orzeta-title-soft { color: var(--mid); }
+.orzeta-mini-label,
+.orzeta-hero-meta-item span { color: var(--muted); }
+
+/* Packaged: the vertical side labels collided with the hero footer */
+.orzeta-side-rail { display: none; }
+
+/* Packaged: info cards sit below the bottles instead of covering them */
+@media (min-width: 901px) {
+  .orzeta-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: stretch;
+    min-height: 0;
+    padding: 74px 22px 22px;
+  }
+  .orzeta-stage-tags { left: auto; inset-inline-start: 24px; }
+  .orzeta-packshot {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    width: min(100%, 340px);
+    max-height: none;
+  }
+  .orzeta-stage-card { position: static; grid-row: 2; max-width: none; }
+  /* The branch sits in the gap between the copy and the bottle panel */
+  .orzeta-branch { left: 46%; }
+  [dir="rtl"] .orzeta-branch { left: 54%; }
+}
+
+/* Packaged, phones: the olive branch overlapped the first label */
+@media (max-width: 900px) {
+  .orzeta-branch { top: -6px; left: auto; right: 14px; width: 84px; transform: none; }
+  [dir="rtl"] .orzeta-branch { right: auto; left: 14px; }
+  .orzeta-hero-copy { padding-top: 26px; }
+}
+[dir="rtl"] .orzeta-kicker::after { margin-inline-start: 14px; }
+
+/* ===================== SCROLLING ===================== */
+
+/* Anchor jumps stop below the floating header on every section */
+main [id] { scroll-margin-top: 100px; }
+
+/* Scroll-linked photos need these frames to crop without becoming scroll containers:
+   with overflow: hidden, view() would watch the frame, which never scrolls. */
+:is(.fullbleed-section, .about-image, .mn-heritage-img, .mn-philosophy, .journey-section) { overflow: clip; }
+
+/* A slim scrollbar in the brand colours */
+html { scrollbar-width: thin; scrollbar-color: var(--gold) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ===================== MOTION ===================== */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* Sections rise into place. An animation, not a transition: card hover transitions used
+     to replace the fade, and the stagger delay used to slow down their hover too. */
+  .reveal.is-visible { animation: reveal-in 0.85s var(--ease-spring) var(--reveal-delay, 0s) backwards; }
+  .reveal-delay-1 { --reveal-delay: 0.08s; }
+  .reveal-delay-2 { --reveal-delay: 0.16s; }
+  .reveal-delay-3 { --reveal-delay: 0.24s; }
+  .reveal-delay-4 { --reveal-delay: 0.32s; }
+
+  /* Photos open with a soft wipe */
+  :is(.about-image, .split-image, .mn-heritage-img).reveal.is-visible {
+    animation-name: reveal-wipe;
+    animation-duration: 1.15s;
+  }
+
+  /* Heroes appear line by line instead of as one block */
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal { opacity: 1; transform: none; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible { animation: none; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal:not(.is-visible) > * { opacity: 0; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible > * {
+    animation: reveal-in 0.95s var(--ease-spring) backwards;
+  }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible > :nth-child(2) { animation-delay: 0.1s; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible > :nth-child(3) { animation-delay: 0.2s; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible > :nth-child(4) { animation-delay: 0.3s; }
+  :is(.hero-content, .mn-hero-content, .orzeta-hero-copy).reveal.is-visible > :nth-child(n + 5) { animation-delay: 0.4s; }
+  .page-hero-content > * { animation: reveal-in 0.95s var(--ease-spring) backwards; }
+  .page-hero-content > :nth-child(2) { animation-delay: 0.1s; }
+  .page-hero-content > :nth-child(n + 3) { animation-delay: 0.2s; }
+  .hero-fact { animation: reveal-in 0.9s var(--ease-spring) 0.45s backwards; }
+  .hero-fact:nth-child(2) { animation-delay: 0.53s; }
+  .hero-fact:nth-child(3) { animation-delay: 0.61s; }
+  .hero-fact:nth-child(4) { animation-delay: 0.69s; }
+
+  /* The home hero drifts very slowly, like a held camera */
+  .hero-media { animation: slow-zoom 24s ease-in-out infinite alternate; }
+
+  /* The bottles float gently */
+  .orzeta-packshot { animation: gentle-float 7s ease-in-out infinite alternate; }
+
+  /* Press feedback */
+  :is(.btn, .mn-btn-gold, .mn-btn-ghost, .mn-btn-ghost-light, .theme-toggle):active { scale: 0.97; }
+
+  /* Theme changes fade instead of flashing */
+  body { transition: background-color 0.4s ease, color 0.4s ease; }
+
+  /* FAQ answers slide open */
+  @supports selector(::details-content) {
+    html { interpolate-size: allow-keywords; }
+    .faq-item::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size 0.4s var(--ease-spring), content-visibility 0.4s allow-discrete;
+    }
+    .faq-item[open]::details-content { block-size: auto; }
+  }
+
+  /* ---- Scroll-linked effects ---- */
+  @supports (animation-timeline: scroll()) {
+
+    /* Reading progress along the top edge */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 1100;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      transform-origin: 0 50%;
+      pointer-events: none;
+      animation: grow-x linear both;
+      animation-timeline: scroll(root block);
+    }
+    [dir="rtl"] body::after { transform-origin: 100% 50%; }
+
+    /* Hero photos move slower than the page */
+    :is(.page-hero-bg, .mn-hero-bg) img,
+    .hero-media video {
+      scale: 1.14;
+      animation: hero-parallax linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 100vh;
+    }
+
+    /* Hero text lifts away as you leave */
+    .home-hero > .container,
+    .mn-hero > .container {
+      animation: hero-leave linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 12vh 90vh;
+    }
+
+    /* Photos inside the page drift within their frames */
+    .fullbleed-section img,
+    .mn-philosophy-bg img,
+    .about-image img,
+    .mn-heritage-img img {
+      scale: 1.14;
+      animation: frame-parallax linear both;
+      animation-timeline: view();
+    }
+
+    /* The traceability line draws itself as you reach it */
+    .journey-steps::before {
+      transform-origin: 0 50%;
+      animation: grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 40% cover 55%;
+    }
+    [dir="rtl"] .journey-steps::before { transform-origin: 100% 50%; }
+    @media (max-width: 1024px) {
+      .journey-steps::before,
+      [dir="rtl"] .journey-steps::before { transform-origin: 50% 0; animation-name: grow-y; }
+    }
+  }
+}
+
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal-wipe {
+  from { opacity: 0; clip-path: inset(10% 0 10% 0 round var(--radius)); }
+  to { opacity: 1; clip-path: inset(0 0 0 0 round var(--radius)); }
+}
+@keyframes slow-zoom { to { transform: scale(1.06); } }
+@keyframes gentle-float { to { translate: 0 -8px; } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes hero-parallax { to { translate: 0 7%; } }
+@keyframes hero-leave { to { opacity: 0.15; translate: 0 -48px; } }
+@keyframes frame-parallax {
+  from { translate: 0 -5%; }
+  to { translate: 0 5%; }
+}
+
+}

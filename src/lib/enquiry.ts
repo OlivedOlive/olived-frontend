@@ -24,9 +24,7 @@ export type FieldErrors = Partial<Record<keyof EnquiryPayload | "form", string>>
 
 export type SubmitResult =
   | { ok: true; mailed: boolean }
-  | { ok: false; error: string; fields: FieldErrors; network: boolean };
-
-const FALLBACK = "We could not send your enquiry. Please try again, or email Contact@olived.tn.";
+  | { ok: false; fields: FieldErrors; rateLimited: boolean };
 
 export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResult> {
   let res: Response;
@@ -37,10 +35,10 @@ export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResu
       body: JSON.stringify(payload),
     });
   } catch {
-    return { ok: false, error: FALLBACK, fields: {}, network: true };
+    return { ok: false, fields: {}, rateLimited: false };
   }
 
-  let data: { success?: boolean; mailed?: boolean; error?: string; fields?: FieldErrors } = {};
+  let data: { success?: boolean; mailed?: boolean; fields?: FieldErrors } = {};
   try {
     data = await res.json();
   } catch {
@@ -48,13 +46,36 @@ export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResu
   }
 
   if (res.ok && data.success) return { ok: true, mailed: Boolean(data.mailed) };
-  return { ok: false, error: data.error ?? FALLBACK, fields: data.fields ?? {}, network: !data.error };
+  return { ok: false, fields: data.fields ?? {}, rateLimited: res.status === 429 };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Same limits as olived-backend/src/enquiry-schema.ts. */
+const MAX_LENGTH = {
+  fullName: 120,
+  company: 160,
+  email: 254,
+  phone: 40,
+  country: 120,
+  volume: 80,
+  targetSpec: 300,
+  message: 5000,
+} as const;
+
 export type ValidationMessages = Record<
-  "fullName" | "company" | "email" | "country" | "interests" | "oilCategory" | "organicPreference" | "volume" | "format" | "targetSpec" | "message",
+  | "fullName"
+  | "company"
+  | "email"
+  | "country"
+  | "interests"
+  | "oilCategory"
+  | "organicPreference"
+  | "volume"
+  | "format"
+  | "targetSpec"
+  | "message"
+  | "tooLong",
   string
 >;
 
@@ -75,6 +96,10 @@ export function validateEnquiry(p: EnquiryPayload, m: ValidationMessages): Field
     if (!p.format) errors.format = m.format;
     if (!p.targetSpec) errors.targetSpec = m.targetSpec;
     if (!p.message) errors.message = m.message;
+  }
+
+  for (const [field, max] of Object.entries(MAX_LENGTH) as [keyof typeof MAX_LENGTH, number][]) {
+    if ((p[field]?.length ?? 0) > max) errors[field] = m.tooLong;
   }
   return errors;
 }

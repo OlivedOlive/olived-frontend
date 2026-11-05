@@ -137,12 +137,6 @@ export default async function PackagedProductsPage() {
                   {p.collection.signature.link} <ArrowSmall />
                 </Link>
               </div>
-              <Image
-                src={orzetaPackshot}
-                alt={p.collection.signature.imageAlt}
-                className="orzeta-card-packshot"
-                sizes="300px"
-              />
             </article>
 
             <article className="orzeta-product-card orzeta-product-card-dark reveal reveal-delay-1">
@@ -160,7 +154,7 @@ export default async function PackagedProductsPage() {
               </div>
             </article>
 
-            {/* NOTE (see AUDIT.md): "Organic" needs certificate details before publication. */}
+            {/* NOTE: "Organic" needs certificate details before publication. */}
             <article className="orzeta-product-card reveal reveal-delay-2">
               <div>
                 <span className="orzeta-card-kicker">{p.collection.organic.kicker}</span>

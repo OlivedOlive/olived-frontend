@@ -41,6 +41,11 @@ const en = {
     },
   },
 
+  notFound: {
+    title: "Page not found",
+    text: "The page you are looking for does not exist or has moved.",
+    home: "Back to the home page",
+  },
   common: {
     nav: {
       home: "Home",
@@ -383,7 +388,6 @@ const en = {
         chips: ["250ml", "500ml", "750ml"],
         note: "Everyday premium",
         link: "Get Specifications",
-        imageAlt: "ORZETA Signature bottle",
       },
       reserve: {
         kicker: "Premium gifting",
@@ -546,6 +550,7 @@ const en = {
     sending: "Sending…",
     thanks: "Thank you — your enquiry has been received.",
     thanksText: "Our export team will respond within 24 business hours.",
+    thanksTextPending: "We have saved your request. If you do not hear from us within 24 business hours, please email Contact@olived.tn.",
     another: "Send another enquiry",
     errors: {
       fullName: "Full name is required",
@@ -561,6 +566,8 @@ const en = {
       message: "Message is required",
       network: "We could not send your enquiry. Please try again, or email Contact@olived.tn.",
       server: "Please check the highlighted fields.",
+      rateLimit: "Too many enquiries from this connection. Please try again later, or email Contact@olived.tn.",
+      tooLong: "This text is too long. Please shorten it.",
     },
   },
 };

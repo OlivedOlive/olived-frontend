@@ -15,6 +15,13 @@ export const site = {
   tagline: "Premium Tunisian olive oil for the world's most demanding markets. Bulk and packaged solutions.",
 } as const;
 
+/** Next.js replaces (not merges) openGraph per page, so pages that set their own must spread this. */
+export const openGraphDefaults = (imageAlt: string) => ({
+  type: "website" as const,
+  siteName: site.name,
+  images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: imageAlt }],
+});
+
 export const addressLine = `${site.address.street}, ${site.address.city}, ${site.address.country}`;
 
 /** Labels come from the dictionary (common.nav[key]); hrefs are prefixed with the language. */
