@@ -23,8 +23,7 @@
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold);
   margin-bottom: 20px;
 }
@@ -33,14 +32,13 @@
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 20px;
 }
 .lead {
   font-size: var(--t-body-lg);
-  font-weight: 300;
+  font-weight: 400;
   color: var(--mid);
   line-height: 1.8;
   max-width: 680px;
@@ -55,8 +53,7 @@
   font-family: var(--font-body);
   font-size: var(--t-sm);
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   padding: 16px 36px;
   transition: all var(--t-fast) ease;
   cursor: pointer;
@@ -108,8 +105,7 @@
   gap: 8px;
   font-size: var(--t-sm);
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--ink);
   border-bottom: 1px solid var(--ink);
   padding-bottom: 2px;
@@ -169,7 +165,7 @@
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   color: var(--on-dark);
   text-shadow: 0 1px 10px rgba(0,0,0,0.28);
 }
@@ -188,8 +184,7 @@
   font-family: var(--font-body);
   font-size: var(--t-sm);
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--on-dark);
   padding: 8px 14px;
   transition: color var(--t-fast) ease;
@@ -271,8 +266,7 @@
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold-light);
   margin-bottom: 16px;
   display: block;
@@ -286,7 +280,7 @@
 .page-hero-lead {
   color: rgba(var(--sand-pale-rgb),0.88);
   font-size: var(--t-body-lg);
-  font-weight: 300;
+  font-weight: 400;
   max-width: 560px;
 }
 
@@ -330,27 +324,26 @@
 .hero-eyebrow {
   display: block;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold-light);
   margin-bottom: 20px;
 }
 .hero-title {
   font-family: var(--font-display);
   font-size: clamp(54px, 4.5vw, 76px);
-  font-weight: 300;
+  font-weight: 400;
   color: var(--on-dark);
   line-height: 0.98;
   letter-spacing: -0.02em;
   margin-bottom: 24px;
 }
-.hero-title em { font-style: italic; font-weight: 300; }
+.hero-title em { font-style: italic; font-weight: 400; }
 .hero-subtitle {
   max-width: 650px;
   font-size: 17px;
-  font-weight: 300;
+  font-weight: 400;
   color: rgba(var(--sand-pale-rgb),0.86);
   margin-bottom: 32px;
   line-height: 1.65;
@@ -359,8 +352,8 @@
 .hero-actions .btn {
   height: 52px;
   padding: 0 30px;
-  font-size: 12px;
-  letter-spacing: 0.13em;
+  font-size: 13px;
+  letter-spacing: 0;
   line-height: 1;
 }
 .hero-actions .btn-gold:hover { background: var(--olive-drop-deep); border-color: var(--olive-drop-deep); }
@@ -374,8 +367,8 @@
 }
 .hero-micro-proof {
   margin-top: 18px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  letter-spacing: 0;
   color: rgba(var(--sand-pale-rgb),0.8);
 }
 .hero-scroll {
@@ -391,8 +384,7 @@
 }
 .hero-scroll span {
   font-size: var(--t-xs);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(var(--sand-pale-rgb),0.66);
   writing-mode: vertical-lr;
   font-weight: 400;
@@ -551,10 +543,9 @@ select:focus-visible {
   margin-top: 16px;
 }
 .stat-hero-sub {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-top: 6px;
 }
@@ -587,7 +578,7 @@ select:focus-visible {
   white-space: nowrap;
 }
 .stat-clean-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 1.35;
   color: var(--gold);
@@ -644,10 +635,9 @@ select:focus-visible {
   margin-bottom: 18px;
 }
 .solution-region-tags span {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--on-dark);
   border: 1px solid rgba(var(--sand-pale-rgb), 0.4);
   padding: 4px 10px;
@@ -679,8 +669,7 @@ select:focus-visible {
 .solution-card-tag {
   display: block;
   font-size: var(--t-xs);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold-light);
   margin-bottom: 10px;
 }
@@ -692,8 +681,7 @@ select:focus-visible {
   gap: 8px;
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--on-dark);
   border-bottom: 1px solid rgba(var(--sand-pale-rgb),0.4);
   padding-bottom: 2px;
@@ -846,8 +834,7 @@ select:focus-visible {
   display: block;
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -911,7 +898,7 @@ select:focus-visible {
   content: '+';
   font-family: var(--font-body);
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--gold);
   flex-shrink: 0;
   transition: transform var(--t-fast) ease;
@@ -938,8 +925,7 @@ select:focus-visible {
 .contact-info-item:first-child { border-top: 1px solid var(--border-light); }
 .contact-info-label {
   font-size: var(--t-xs);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: 6px;
 }
@@ -950,8 +936,7 @@ select:focus-visible {
 .form-label {
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
 }
 .form-control {
@@ -998,7 +983,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   flex-wrap: wrap;
 }
 .cta-band h2 { color: var(--on-dark); font-size: var(--t-h2); }
-.cta-band p { color: rgba(var(--sand-pale-rgb),0.74); font-size: var(--t-body-lg); font-weight: 300; margin-top: 8px; }
+.cta-band p { color: rgba(var(--sand-pale-rgb),0.74); font-size: var(--t-body-lg); font-weight: 400; margin-top: 8px; }
 .cta-band-actions { display: flex; gap: 16px; flex-wrap: wrap; flex-shrink: 0; }
 
 /* ===== DIVIDER ===== */
@@ -1029,8 +1014,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--on-dark);
   margin-bottom: 20px;
 }
@@ -1061,7 +1045,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .footer-copyright {
   font-size: var(--t-xs);
   color: rgba(var(--sand-pale-rgb),0.48);
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -1173,8 +1157,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold);
   margin-bottom: 20px;
 }
@@ -1194,7 +1177,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .about-body {
   font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.95;
   color: var(--mid);
   margin-bottom: 16px;
@@ -1218,8 +1201,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   font-family: var(--font-body);
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--ink);
   text-decoration: none;
   border-bottom: 1px solid var(--ink);
@@ -1263,8 +1245,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   padding: 16px 28px;
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -1302,7 +1283,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   content: counter(pl-step, decimal-leading-zero);
   font-family: var(--font-display);
   font-size: 40px;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--cream);
   display: block;
   margin-bottom: 12px;
@@ -1390,10 +1371,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   gap: 24px;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(90,90,88,0.48);
 }
 .orzeta-hero-grid {
@@ -1412,8 +1392,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   gap: 14px;
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-kicker::after {
@@ -1426,8 +1405,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   margin-top: 26px;
   font-size: var(--t-xs);
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(var(--olive-rgb),0.56);
 }
 .orzeta-title {
@@ -1443,7 +1421,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 }
 .orzeta-title-soft {
   color: rgba(var(--olive-rgb),0.56);
-  font-weight: 300;
+  font-weight: 400;
 }
 .orzeta-title-strong {
   color: var(--olive-drop-deep);
@@ -1474,10 +1452,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 }
 .orzeta-hero-meta-item span {
   display: block;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(90,90,88,0.56);
 }
 .orzeta-hero-meta-item strong {
@@ -1539,10 +1516,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   border-radius: 999px;
   border: 1px solid rgba(var(--olive-rgb),0.14);
   background: rgba(var(--sand-pale-rgb),0.72);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop-deep);
 }
 .orzeta-packshot {
@@ -1576,10 +1552,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .orzeta-stage-card-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-stage-card p {
@@ -1603,10 +1578,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .orzeta-hero-footer-item span {
   display: block;
   margin-bottom: 8px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-hero-footer-item p {
@@ -1657,10 +1631,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .orzeta-card-kicker {
   display: block;
   margin-top: 20px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-product-card h3 {
@@ -1687,10 +1660,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   border-radius: 999px;
   border: 1px solid rgba(107,125,58,0.16);
   background: rgba(245,242,236,0.96);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop-deep);
 }
 .orzeta-product-card-footer {
@@ -1705,10 +1677,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   border-top: 1px solid rgba(25,25,23,0.08);
 }
 .orzeta-product-note {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-product-card-dark .orzeta-card-kicker,
@@ -1820,10 +1791,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .orzeta-editorial-caption span {
   display: block;
   margin-bottom: 8px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-editorial-caption p {
@@ -1850,10 +1820,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 }
 .orzeta-format-kicker {
   display: block;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--olive-drop);
 }
 .orzeta-format-card h3 {
@@ -2008,11 +1977,10 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 /* Thinner, elegant "Request Quote" button */
 .page-maison .header-actions .btn-outline-light {
   padding: 8px 18px;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 13px;
+  letter-spacing: 0;
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.30);
-  border-radius: 0;
   font-weight: 400;
 }
 .page-maison .site-header.scrolled .header-actions .btn-outline-light {
@@ -2073,10 +2041,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-eyebrow {
   display: block;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.40em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gd-lt);
   margin-bottom: 36px;
 }
@@ -2084,7 +2051,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-hero-title {
   font-family: var(--font-display);
   font-size: clamp(48px, 7.5vw, 108px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 0.94;
   letter-spacing: -0.028em;
   color: var(--on-dark);
@@ -2100,10 +2067,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   align-items: center;
   gap: 12px;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(246, 241, 232, 0.52);
   text-decoration: none;
   transition: color 0.3s ease;
@@ -2141,10 +2107,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-label {
   display: block;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--tx-mute);
   margin-bottom: 24px;
 }
@@ -2153,7 +2118,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-intro-title {
   font-family: var(--font-display);
   font-size: clamp(38px, 5vw, 68px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.02;
   letter-spacing: -0.022em;
   color: var(--ink);
@@ -2175,7 +2140,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-intro-body {
   font-family: var(--font-body);
   font-size: 15px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 2.0;
   color: var(--tx-mid);
   letter-spacing: 0.01em;
@@ -2188,10 +2153,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   align-items: center;
   gap: 8px;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--ink);
   text-decoration: none;
   border-bottom: 1px solid var(--bd);
@@ -2232,7 +2196,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-fig-num {
   font-family: var(--font-display);
   font-size: clamp(28px, 3.2vw, 52px);
-  font-weight: 300;
+  font-weight: 400;
   color: var(--ink);
   line-height: 1;
   letter-spacing: -0.03em;
@@ -2240,10 +2204,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 
 .mn-fig-label {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--tx-mute);
 }
 
@@ -2285,10 +2248,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   left: 0;
   right: 0;
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.20em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(246, 241, 232, 0.65);
   background: rgba(11, 11, 11, 0.52);
   padding: 10px 18px;
@@ -2310,7 +2272,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 }
 .mn-section-title em {
   font-style: italic;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--gd);
 }
 
@@ -2318,7 +2280,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-poem {
   font-family: var(--font-display);
   font-size: clamp(17px, 2.1vw, 22px);
-  font-weight: 300;
+  font-weight: 400;
   font-style: italic;
   line-height: 1.9;
   color: var(--tx-mid);
@@ -2328,10 +2290,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 /* Varieties — elegant inline small caps */
 .mn-varieties {
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.20em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--tx-mute);
   margin-bottom: 36px;
   display: block;
@@ -2349,7 +2310,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-facts li {
   font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.65;
   color: var(--tx-mid);
   padding: 14px 0 14px 16px;
@@ -2421,10 +2382,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-eyebrow-gold {
   display: block;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.36em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gd-lt);
   margin-bottom: 30px;
 }
@@ -2432,7 +2392,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-philosophy-title {
   font-family: var(--font-display);
   font-size: clamp(36px, 5.2vw, 76px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.05;
   letter-spacing: -0.02em;
   color: var(--on-dark);
@@ -2446,7 +2406,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-philosophy-sub {
   font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.8;
   color: rgba(246, 241, 232, 0.56);
   margin-bottom: 48px;
@@ -2499,7 +2459,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-fstat-num {
   font-family: var(--font-display);
   font-size: clamp(36px, 4.5vw, 64px);
-  font-weight: 300;
+  font-weight: 400;
   color: var(--gd-lt);
   line-height: 1;
   letter-spacing: -0.025em;
@@ -2507,10 +2467,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 
 .mn-fstat-label {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(246, 241, 232, 0.36);
 }
 
@@ -2535,7 +2494,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-final-title {
   font-family: var(--font-display);
   font-size: clamp(38px, 5.2vw, 74px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.02;
   letter-spacing: -0.022em;
   color: var(--on-dark);
@@ -2549,11 +2508,11 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .mn-final-sub {
   font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.8;
   color: rgba(246, 241, 232, 0.42);
   margin-bottom: 44px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
 }
 
 .mn-final-actions {
@@ -2572,10 +2531,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   display: inline-block;
   padding: 14px 40px;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   background: var(--gd);
   color: var(--on-dark);
   text-decoration: none;
@@ -2593,10 +2551,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   display: inline-block;
   padding: 14px 40px;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   background: transparent;
   color: rgba(246, 241, 232, 0.75);
   text-decoration: none;
@@ -2613,10 +2570,9 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   display: inline-block;
   padding: 14px 40px;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   background: transparent;
   color: rgba(246, 241, 232, 0.48);
   text-decoration: none;

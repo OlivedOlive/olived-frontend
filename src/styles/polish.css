@@ -22,9 +22,9 @@
 }
 
 /* Maison: small labels were too faint to read */
-.mn-eyebrow { font-size: 11px; }
+.mn-eyebrow { font-size: 13px; }
 .mn-scroll-cta { color: rgba(246, 241, 232, 0.85); }
-.mn-fstat-label { font-size: 10px; color: rgba(246, 241, 232, 0.66); }
+.mn-fstat-label { font-size: 13px; color: rgba(246, 241, 232, 0.66); }
 .mn-final-sub { color: rgba(246, 241, 232, 0.72); }
 .mn-btn-ghost-light { color: rgba(246, 241, 232, 0.82); border-color: rgba(246, 241, 232, 0.32); }
 

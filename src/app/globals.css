@@ -3,6 +3,7 @@
 @import "../styles/modern.css";
 @import "../styles/theme.css";
 @import "../styles/polish.css";
+@import "../styles/refresh.css";
 
 /* ============================================================
    OLIVED — design tokens
@@ -13,22 +14,22 @@
 @layer base {
   :root {
     /* Luxury beige palette */
-    --white: #faf8f2;
-    --off-white: #f4f0e6;
-    --warm-white: #ede8dc;
-    --cream: #e6dfd0;
-    --border: #ddd7c8;
-    --border-light: #ede8dc;
-    --charcoal: #1c1a16;
-    --dark: #13120f;
-    --mid: #6b6560;
-    --muted: #7d776f;
-    --gold: #b08d57;
-    --gold-light: #c9a96e;
-    --gold-pale: #e8d9bc;
-    --olive-drop: #b08d57;
+    --white: #f8f6ef;
+    --off-white: #efede1;
+    --warm-white: #e8e6d8;
+    --cream: #e1dfce;
+    --border: #d9d7c5;
+    --border-light: #e6e4d6;
+    --charcoal: #1a1f14;
+    --dark: #141810;
+    --mid: #5f6353;
+    --muted: #777b69;
+    --gold: #b38f45;
+    --gold-light: #d2b36c;
+    --gold-pale: #e7dcb9;
+    --olive-drop: #b38f45;
     --olive-drop-deep: #8a6d3d;
-    --olive-rgb: 28, 26, 22;
+    --olive-rgb: 26, 31, 20;
     --olive-soft-rgb: 107, 101, 96;
     --sand-rgb: 244, 240, 230;
     --sand-soft-rgb: 237, 232, 220;
@@ -39,35 +40,35 @@
     --paper: var(--white);
     --ink: var(--charcoal);
     --on-dark: #faf8f2;
-    --night: #1c1a16;
+    --night: #202818;
 
     /* Maison page palette (from maison.css) */
     --iv: #f6f1e8;
     --iv-mid: #eee8da;
     --iv-deep: #e4dcca;
-    --bk: #0b0b0b;
-    --ch: #1a1713;
-    --gd: #b58a4a;
-    --gd-lt: #c99b58;
+    --bk: #141810;
+    --ch: #202818;
+    --gd: #b38f45;
+    --gd-lt: #d2b36c;
     --bd: #ddd2bf;
     --bd-lt: #eae3d5;
     --tx-mid: #6a6258;
     --tx-mute: #7d776f;
 
     /* Typography — fonts are self-hosted by next/font (see app/layout.tsx) */
-    --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
-    --font-body: var(--font-montserrat), system-ui, -apple-system, sans-serif;
+    --font-display: var(--font-serif-face), Georgia, "Times New Roman", serif;
+    --font-body: var(--font-sans-face), system-ui, -apple-system, sans-serif;
 
     /* Fluid type scale */
     --t-hero: clamp(52px, 7.5vw, 110px);
-    --t-h1: clamp(40px, 5.5vw, 80px);
-    --t-h2: clamp(30px, 4vw, 60px);
-    --t-h3: clamp(24px, 3vw, 44px);
-    --t-h4: clamp(18px, 2vw, 28px);
-    --t-body-lg: 18px;
-    --t-body: 15px;
-    --t-sm: 13px;
-    --t-xs: 11px;
+    --t-h1: clamp(46px, 6.4vw, 96px);
+    --t-h2: clamp(36px, 4.8vw, 72px);
+    --t-h3: clamp(26px, 3vw, 42px);
+    --t-h4: clamp(20px, 2vw, 28px);
+    --t-body-lg: 19px;
+    --t-body: 16px;
+    --t-sm: 15px;
+    --t-xs: 14px;
 
     /* Spacing */
     --section-v: clamp(80px, 10vw, 160px);
@@ -93,14 +94,14 @@
   body {
     font-family: var(--font-body);
     font-size: var(--t-body);
-    font-weight: 300;
+    font-weight: 400;
     color: var(--ink);
     background: var(--paper);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    line-height: 1.75;
-    letter-spacing: 0.01em;
+    line-height: 1.65;
+    letter-spacing: 0;
   }
   img,
   video {
@@ -128,7 +129,7 @@
     font-family: var(--font-display);
     font-weight: 400;
     line-height: 1.08;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
   }
   h1 { font-size: var(--t-h1); }
   h2 { font-size: var(--t-h2); }

@@ -60,7 +60,7 @@ export async function Footer() {
               </a>
             </div>
             <div className="mt-5">
-              <Link href={href("/contact")} className="btn btn-gold px-6 py-3 text-[11px]">
+              <Link href={href("/contact")} className="btn btn-gold">
                 {t.common.requestQuote}
               </Link>
             </div>

@@ -66,8 +66,8 @@ const stats = [
   { target: 3000 },
   { target: 900 },
   { target: 180 },
-  { target: 1916, plain: true },
-  { target: 2006, plain: true },
+  { target: 1916, plain: true, photo: heritage },
+  { target: 2006, plain: true, photo: grovesHarvest },
 ];
 
 const exportIcons = [ShieldCheckIcon, ContainerIcon, ClipboardCheckIcon, BadgeCheckIcon, PhoneIcon];
@@ -147,10 +147,10 @@ export default async function HomePage() {
                 ["/bulk-olive-oil", h.sourcing.bulk, ""],
                 ["/packaged-products", h.sourcing.packaged, " reveal-delay-1"],
               ] as const
-            ).map(([path, card, delay], i) => (
+            ).map(([path, card, delay]) => (
               <Link key={path} href={href(path)} className={`card sourcing-card reveal${delay}`}>
-                <span className="sourcing-index" aria-hidden="true">
-                  {String(i + 1).padStart(2, "0")}
+                <span className="card-arrow" aria-hidden="true">
+                  <ArrowRight size={20} />
                 </span>
                 <span className="eyebrow">{card.eyebrow}</span>
                 <h4>{card.title}</h4>
@@ -235,8 +235,9 @@ export default async function HomePage() {
             {stats.map((s, i) => (
               <div
                 key={s.target}
-                className={`bento-tile reveal reveal-delay-${(i % 4) + 1}${s.plain ? " bento-wide" : ""}`}
+                className={`bento-tile reveal reveal-delay-${(i % 4) + 1}${s.plain ? " bento-wide bento-photo" : ""}`}
               >
+                {s.photo && <Image src={s.photo} alt="" fill sizes="(max-width: 480px) 50vw, (max-width: 1024px) 100vw, 50vw" />}
                 <div className="bento-number">
                   <span className="count-up" data-target={s.target} data-plain={s.plain ? "true" : undefined}>
                     {number(s.target, s.plain)}

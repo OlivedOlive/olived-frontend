@@ -196,10 +196,9 @@ html, body { overflow-x: clip; }
 .hero-fact { padding: 22px 0 28px; }
 .hero-fact + .hero-fact { padding-left: 28px; border-left: 1px solid rgba(var(--sand-pale-rgb), 0.14); }
 .hero-fact dt {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--gold-light);
   margin-bottom: 4px;
 }
@@ -308,7 +307,7 @@ html, body { overflow-x: clip; }
 .bento-hero-number {
   font-family: var(--font-display);
   font-size: clamp(110px, 13vw, 200px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 0.8;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
@@ -316,10 +315,9 @@ html, body { overflow-x: clip; }
 .bento-hero-label { font-family: var(--font-display); font-size: clamp(22px, 2vw, 30px); line-height: 1.15; }
 .bento-hero-sub {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: rgba(var(--sand-pale-rgb), 0.6);
 }
 .bento-wide { grid-column: span 2; flex-direction: row; align-items: flex-end; min-height: 128px; }
@@ -334,10 +332,9 @@ html, body { overflow-x: clip; }
   white-space: nowrap;
 }
 .bento-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--mid);
   line-height: 1.5;
 }
@@ -363,7 +360,7 @@ html, body { overflow-x: clip; }
   background: radial-gradient(circle, rgba(176, 141, 87, 0.18) 0%, rgba(176, 141, 87, 0) 65%);
   pointer-events: none;
 }
-.journey-header h2 { color: var(--on-dark); font-weight: 300; }
+.journey-header h2 { color: var(--on-dark); font-weight: 400; }
 .journey-header h2 em { color: var(--gold-light); }
 .journey-steps {
   position: relative;
@@ -396,9 +393,9 @@ html, body { overflow-x: clip; }
 }
 .journey-num {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.2em;
+  letter-spacing: 0;
   color: rgba(var(--sand-pale-rgb), 0.45);
   margin-bottom: 18px;
 }
@@ -413,10 +410,9 @@ html, body { overflow-x: clip; }
 }
 .journey-step h3 {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--on-dark);
   margin-bottom: 10px;
 }
@@ -476,7 +472,7 @@ html, body { overflow-x: clip; }
   pointer-events: none;
 }
 .cta-band > .container { position: relative; }
-.cta-band h2 { font-size: clamp(40px, 5vw, 76px); font-weight: 300; line-height: 1; }
+.cta-band h2 { font-size: clamp(40px, 5vw, 76px); font-weight: 400; line-height: 1; }
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 1024px) {

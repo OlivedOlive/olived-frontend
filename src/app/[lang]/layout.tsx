@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Amiri, Cormorant_Garamond, IBM_Plex_Sans_Arabic, Montserrat } from "next/font/google";
+import { Amiri, IBM_Plex_Sans_Arabic, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import { InlineScript } from "@/components/InlineScript";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -11,18 +11,17 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import { openGraphDefaults, site } from "@/lib/site";
 import "../globals.css";
 
-const cormorant = Cormorant_Garamond({
+const serif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: "400",
   style: ["normal", "italic"],
-  variable: "--font-cormorant",
+  variable: "--font-serif-face",
   display: "swap",
 });
 
-const montserrat = Montserrat({
+const sans = Instrument_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-montserrat",
+  variable: "--font-sans-face",
   display: "swap",
 });
 
@@ -67,8 +66,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf8f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#12110e" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f6ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f120b" },
   ],
 };
 
@@ -80,7 +79,7 @@ const themeScript = `(function(){var d=document.documentElement,t;try{t=localSto
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const { locale, t } = await getDictionary();
-  const fonts = [cormorant.variable, montserrat.variable, amiri.variable, plexArabic.variable].join(" ");
+  const fonts = [serif.variable, sans.variable, amiri.variable, plexArabic.variable].join(" ");
 
   return (
     <html lang={locale} dir={localeDir[locale]} className={fonts} data-scroll-behavior="smooth" suppressHydrationWarning>

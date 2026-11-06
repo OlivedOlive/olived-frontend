@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 import grovesHarvest from "@/assets/images/groves-harvest.jpg";
 import { PageHero } from "@/components/PageHero";
 import { localeDir, localizeHref, locales } from "@/i18n/config";
@@ -8,17 +8,16 @@ import en from "@/i18n/dictionaries/en";
 import fr from "@/i18n/dictionaries/fr";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+const serif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-cormorant",
+  weight: "400",
+  variable: "--font-serif-face",
   display: "swap",
 });
 
-const montserrat = Montserrat({
+const sans = Instrument_Sans({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-montserrat",
+  variable: "--font-sans-face",
   display: "swap",
 });
 
@@ -30,7 +29,7 @@ const dictionaries = { en, fr, ar };
 // language is unknown: the page speaks all three and links to each home page.
 export default function GlobalNotFound() {
   return (
-    <html lang="en" className={`${cormorant.variable} ${montserrat.variable}`}>
+    <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
         <PageHero
           image={grovesHarvest}

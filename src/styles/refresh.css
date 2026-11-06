@@ -1,0 +1,207 @@
+/*
+ * OLIVED — current visual system, loaded last.
+ * Olive colour palette, inset rounded panels instead of edge-to-edge bands, sentence-case
+ * labels, an oversized editorial hero and photo tiles. Tokens live in app/globals.css.
+ */
+@layer components {
+
+:root {
+  --inset: 12px;
+  --panel-radius: 28px;
+  --leaf: #c7d08f;
+}
+[data-theme="dark"] { --olive-green: #c7d08f; }
+@media (max-width: 768px) {
+  :root { --inset: 8px; --panel-radius: 20px; }
+}
+
+/* Instrument Serif has one weight: never fake bold or italics on it */
+html { font-synthesis: none; }
+strong { font-weight: 600; }
+
+/* ---- Inset panels ---- */
+:is(.home-hero, .page-hero, .mn-hero, .fullbleed-section, .journey-section, .cta-band, .mn-philosophy, .mn-final) {
+  margin: var(--inset);
+  border-radius: var(--panel-radius);
+}
+.site-footer {
+  margin: 0 var(--inset) var(--inset);
+  border-radius: var(--panel-radius);
+}
+.mn-hero { height: calc(100svh - 2 * var(--inset)); }
+.site-header { padding-top: calc(24px + var(--inset)); }
+.site-header.is-scrolled,
+.site-header.site-header-light.is-scrolled { padding-top: 12px; }
+
+/* Cream bands become panels too */
+.section-cream,
+.mn-heritage { margin: var(--inset); border-radius: var(--panel-radius); }
+
+/* Text inside a panel lines up with the logo and with text on the page */
+:is(.home-hero, .page-hero, .mn-hero, .fullbleed-section, .journey-section, .cta-band, .mn-philosophy, .mn-final, .section-cream, .mn-heritage, .site-footer) .container {
+  padding-inline: calc(var(--cont-pad) - var(--inset));
+}
+
+/* Dark panels carry the olive colour */
+.journey-section { background: var(--night); }
+.journey-step::before {
+  background: var(--night);
+  box-shadow: inset 0 0 0 4px var(--night), inset 0 0 0 8px var(--gold);
+}
+.mn-final { background: var(--night); }
+
+/* Separator dots need air in this typeface */
+:is(.hero-eyebrow, .hero-micro-proof, .trust-bar-text, .mn-varieties, .mn-img-caption, .oil-apps-value) { word-spacing: 0.1em; }
+
+/* Offer cards: labels and copy stay readable over the photos */
+.solution-card-tag { color: var(--leaf); }
+@media (max-width: 768px) {
+  .solution-card,
+  .solution-card-feature,
+  .solution-card-stack { min-height: 520px; }
+  .solution-card::after,
+  .solution-card-stack::after {
+    background: linear-gradient(to top, rgba(20, 24, 16, 0.96) 0%, rgba(20, 24, 16, 0.86) 46%, rgba(20, 24, 16, 0) 74%);
+  }
+  .solution-card-stack .solution-card-bg img { object-position: center top; }
+}
+
+/* ---- Labels: a small dot and sentence case replace the spaced capitals ---- */
+.about-eyebrow { display: inline-block; color: var(--olive-green); font-weight: 500; }
+.about-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  vertical-align: 1px;
+}
+.eyebrow,
+.eyebrow-dark { color: var(--olive-green); font-weight: 500; }
+.eyebrow::before,
+.eyebrow-dark::before {
+  width: 7px;
+  height: 7px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 1;
+  vertical-align: 1px;
+}
+[dir="rtl"] :is(.eyebrow, .eyebrow-dark)::before { margin-left: 10px; }
+:is(.journey-section, .bento-hero, .fullbleed-text) .eyebrow,
+.hero-eyebrow,
+.page-hero-eyebrow { color: var(--leaf); }
+.hero-eyebrow { font-size: 15px; }
+h1 em, h2 em, .hero-title em { color: var(--gold); }
+.hero-title em,
+.journey-section h2 em { color: var(--gold-light); }
+
+/* Maison uses the same header as every other page */
+.page-maison .site-header { border-bottom: none; }
+.page-maison .logo img { height: 46px; }
+.page-maison .site-header.is-scrolled .logo img { height: 38px; }
+.page-maison .header-actions .btn-outline-light { padding: 14px 26px; font-size: 15px; font-weight: 500; }
+
+/* ---- Navigation and buttons ---- */
+.nav-item { font-size: 15px; font-weight: 500; }
+.btn,
+.hero-actions .btn { font-size: 15px; font-weight: 500; }
+.btn { padding: 14px 26px; }
+.btn-gold,
+.mn-btn-gold { color: var(--night); }
+.btn-gold:hover,
+.hero-actions .btn-gold:hover { background: var(--gold-light); border-color: var(--gold-light); color: var(--night); }
+:is(.mn-btn-gold, .mn-btn-ghost, .mn-btn-ghost-light) { font-size: 15px; }
+
+/* ---- Home hero: oversized headline at the base of the frame ---- */
+.home-hero { min-height: calc(100svh - 2 * var(--inset)); align-items: flex-end; }
+.home-hero > .container { width: 100%; }
+.home-hero .hero-content { max-width: 1180px; padding: 150px 0 150px; }
+.hero-title { font-size: clamp(56px, 7.4vw, 124px); font-weight: 400; line-height: 0.98; letter-spacing: -0.022em; }
+.hero-subtitle { font-size: 19px; max-width: 620px; }
+.hero-micro-proof { font-size: 14px; }
+.hero-fact dt { font-size: 14px; color: var(--leaf); }
+.hero-fact dd { font-size: clamp(20px, 1.9vw, 28px); }
+
+/* ---- Marquee: open type on the page instead of a dark band ---- */
+.provenance-marquee {
+  background: transparent;
+  border-block: 1px solid var(--border);
+  margin-block: 24px 0;
+  padding: 26px 0;
+}
+.provenance-marquee::before { background: linear-gradient(90deg, var(--paper), transparent); }
+.provenance-marquee::after { background: linear-gradient(270deg, var(--paper), transparent); }
+.marquee-track li { font-size: clamp(24px, 2.6vw, 38px); color: var(--ink); }
+
+/* ---- Sourcing cards: arrow chip ---- */
+.sourcing-card { padding: 44px; }
+.sourcing-card h4 { font-size: clamp(30px, 3.2vw, 46px); }
+.sourcing-card p { font-size: 16px; }
+.card-arrow {
+  position: absolute;
+  top: 32px;
+  inset-inline-end: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease, rotate 0.45s var(--ease-spring);
+}
+.sourcing-card:hover .card-arrow { background: var(--night); border-color: var(--night); color: var(--on-dark); rotate: -45deg; }
+[data-theme="dark"] .sourcing-card:hover .card-arrow { background: var(--gold); border-color: var(--gold); color: var(--night); }
+[dir="rtl"] .card-arrow svg { transform: scaleX(-1); }
+[dir="rtl"] .sourcing-card:hover .card-arrow { rotate: 45deg; }
+
+/* ---- Stats ---- */
+.bento-hero-number { font-size: clamp(130px, 15vw, 230px); font-weight: 400; }
+.bento-number { font-size: clamp(46px, 4.8vw, 76px); }
+.bento-label { font-size: 15px; font-weight: 400; }
+.bento-hero-sub { font-size: 14px; }
+.bento-photo { position: relative; overflow: hidden; border: none; min-height: 190px; }
+.bento-photo img { object-fit: cover; transition: scale 1s var(--ease-spring); }
+.bento-photo:hover img { scale: 1.05; }
+.bento-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20, 24, 16, 0.78) 0%, rgba(20, 24, 16, 0.18) 75%);
+}
+.bento-photo > :is(.bento-number, .bento-label) { position: relative; z-index: 1; color: var(--on-dark); }
+
+/* ---- Traceability ---- */
+.journey-step h3 { font-size: 16px; font-weight: 500; }
+.journey-num { font-size: 13px; }
+.journey-fact { font-size: clamp(34px, 3.2vw, 50px); }
+
+/* ---- Packaged: the gold cards become deep olive, with readable text ---- */
+.orzeta-product-card-dark,
+.orzeta-format-card-olive { background: var(--night); }
+.orzeta-title { font-weight: 400; }
+
+/* ---- Footer ---- */
+.footer-col-title { font-size: 15px; font-weight: 500; }
+
+@media (max-width: 1024px) {
+  .home-hero .hero-content { padding-bottom: 230px; }
+}
+@media (max-width: 768px) {
+  .home-hero .hero-content { padding: 120px 0 200px; }
+  .hero-title { font-size: clamp(48px, 13.5vw, 68px); }
+  .hero-subtitle { font-size: 17px; }
+  .sourcing-card { padding: 32px 26px; }
+  .sourcing-card h4 { padding-inline-end: 56px; }
+  .card-arrow { top: 24px; inset-inline-end: 22px; width: 44px; height: 44px; }
+  .bento-hero-number { font-size: clamp(110px, 34vw, 150px); }
+  .bento-number { font-size: 42px; }
+  .bento-photo { min-height: 160px; }
+}
+
+}

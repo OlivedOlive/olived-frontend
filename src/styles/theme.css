@@ -24,7 +24,7 @@
   color: var(--ink);
   text-shadow: none;
   font-size: 13px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
 }
 .lang-switch-menu .lang-link { opacity: 0.6; }
 @media (max-width: 768px) {
@@ -72,24 +72,24 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --paper: #12110e;
-  --ink: #ece5d6;
-  --off-white: #1a1814;
-  --warm-white: #201d18;
-  --cream: #29251f;
-  --border: #3a342b;
-  --border-light: #2b2721;
-  --mid: #b4ab9c;
-  --muted: #8c8477;
-  --olive-rgb: 236, 229, 214;
+  --paper: #0f120b;
+  --ink: #eceada;
+  --off-white: #171b12;
+  --warm-white: #1e2318;
+  --cream: #272d1f;
+  --border: #343b2a;
+  --border-light: #262c1e;
+  --mid: #b3b5a0;
+  --muted: #8b8e7a;
+  --olive-rgb: 236, 234, 218;
   --olive-soft-rgb: 180, 171, 156;
-  --iv: #14130f;
-  --iv-mid: #1b1915;
-  --iv-deep: #24211b;
-  --bd: #3a342b;
-  --bd-lt: #2b2721;
-  --tx-mid: #b4ab9c;
-  --tx-mute: #8c8477;
+  --iv: #10130c;
+  --iv-mid: #181c13;
+  --iv-deep: #21261a;
+  --bd: #343b2a;
+  --bd-lt: #262c1e;
+  --tx-mid: #b3b5a0;
+  --tx-mute: #8b8e7a;
   --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 36px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.55);
@@ -97,7 +97,7 @@
 
 /* Header: dark glass pill, white logo */
 [data-theme="dark"] .site-header.is-scrolled .header-inner {
-  background: rgba(18, 17, 14, 0.78);
+  background: rgba(15, 18, 11, 0.78);
   border-color: rgba(236, 229, 214, 0.08);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
@@ -236,7 +236,7 @@ html[lang="ar"] .marquee-track li { font-style: normal; }
 [data-theme="dark"] .orzeta-hero-shell,
 [data-theme="dark"] .orzeta-product-card-featured,
 [data-theme="dark"] .orzeta-editorial-panel {
-  background: linear-gradient(180deg, #1d1a15 0%, #17150f 100%);
+  background: linear-gradient(180deg, #1c2116 0%, #151910 100%);
 }
 [data-theme="dark"] .orzeta-hero-footer { background: var(--border-light); }
 [data-theme="dark"] .orzeta-hero-footer-item,
