@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import orzetaPackshot from "@/assets/images/orzeta-packshot.jpg";
 import { ArrowSmall } from "@/components/icons";
+import { orzetaBottles, OrzetaBottles } from "@/components/OrzetaBottles";
 import { alternates, localizeHref } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 
@@ -87,13 +87,13 @@ export default async function PackagedProductsPage() {
                     <span className="orzeta-stage-card-label">{p.hero.blendLabel}</span>
                     <p>{p.hero.blend}</p>
                   </div>
-                  <Image
-                    src={orzetaPackshot}
-                    alt={p.hero.packshotAlt}
-                    className="orzeta-packshot"
-                    sizes="(max-width: 900px) 310px, 430px"
-                    loading="eager"
-                    fetchPriority="high"
+                  <OrzetaBottles
+                    eager
+                    alts={{
+                      sun: p.collection.sun.imageAlt,
+                      grove: p.collection.grove.imageAlt,
+                      organic: p.collection.organic.imageAlt,
+                    }}
                   />
                   <div className="orzeta-stage-card orzeta-stage-card-bottom">
                     <span className="orzeta-stage-card-label">{p.hero.shelfLabel}</span>
@@ -124,39 +124,48 @@ export default async function PackagedProductsPage() {
           </div>
 
           <div className="orzeta-collection-grid">
-            <article className="orzeta-product-card orzeta-product-card-featured reveal">
-              <div>
-                <span className="orzeta-card-kicker">{p.collection.signature.kicker}</span>
-                <h3>{p.collection.signature.title}</h3>
-                <p>{p.collection.signature.text}</p>
-                <Chips items={p.collection.signature.chips} />
+            <article className="orzeta-product-card reveal">
+              <div className="orzeta-bottle-stage orzeta-bottle-stage-sun">
+                <Image src={orzetaBottles.sun} alt={p.collection.sun.imageAlt} sizes="130px" />
+              </div>
+              <div className="orzeta-product-card-body">
+                <span className="orzeta-card-kicker">{p.collection.sun.kicker}</span>
+                <h3>{p.collection.sun.title}</h3>
+                <p>{p.collection.sun.text}</p>
+                <Chips items={p.collection.sun.chips} />
               </div>
               <div className="orzeta-product-card-footer">
-                <span className="orzeta-product-note">{p.collection.signature.note}</span>
+                <span className="orzeta-product-note">{p.collection.sun.note}</span>
                 <Link href={href("/contact")} className="text-link">
-                  {p.collection.signature.link} <ArrowSmall />
+                  {p.collection.sun.link} <ArrowSmall />
                 </Link>
               </div>
             </article>
 
-            <article className="orzeta-product-card orzeta-product-card-dark reveal reveal-delay-1">
-              <div>
-                <span className="orzeta-card-kicker">{p.collection.reserve.kicker}</span>
-                <h3>{p.collection.reserve.title}</h3>
-                <p>{p.collection.reserve.text}</p>
-                <Chips items={p.collection.reserve.chips} />
+            <article className="orzeta-product-card reveal reveal-delay-1">
+              <div className="orzeta-bottle-stage orzeta-bottle-stage-grove">
+                <Image src={orzetaBottles.grove} alt={p.collection.grove.imageAlt} sizes="130px" />
+              </div>
+              <div className="orzeta-product-card-body">
+                <span className="orzeta-card-kicker">{p.collection.grove.kicker}</span>
+                <h3>{p.collection.grove.title}</h3>
+                <p>{p.collection.grove.text}</p>
+                <Chips items={p.collection.grove.chips} />
               </div>
               <div className="orzeta-product-card-footer">
-                <span className="orzeta-product-note">{p.collection.reserve.note}</span>
-                <Link href={href("/contact")} className="text-link text-link-light">
-                  {p.collection.reserve.link} <ArrowSmall />
+                <span className="orzeta-product-note">{p.collection.grove.note}</span>
+                <Link href={href("/contact")} className="text-link">
+                  {p.collection.grove.link} <ArrowSmall />
                 </Link>
               </div>
             </article>
 
             {/* NOTE: "Organic" needs certificate details before publication. */}
             <article className="orzeta-product-card reveal reveal-delay-2">
-              <div>
+              <div className="orzeta-bottle-stage orzeta-bottle-stage-organic">
+                <Image src={orzetaBottles.organic} alt={p.collection.organic.imageAlt} sizes="130px" />
+              </div>
+              <div className="orzeta-product-card-body">
                 <span className="orzeta-card-kicker">{p.collection.organic.kicker}</span>
                 <h3>{p.collection.organic.title}</h3>
                 <p>{p.collection.organic.text}</p>
@@ -192,7 +201,7 @@ export default async function PackagedProductsPage() {
 
             <div className="orzeta-editorial-visual reveal reveal-delay-2">
               <div className="orzeta-editorial-stage">
-                <Image src={orzetaPackshot} alt={p.editorial.imageAlt} sizes="(max-width: 900px) 80vw, 375px" />
+                <Image src={orzetaBottles.sun} alt={p.collection.sun.imageAlt} sizes="200px" />
                 <div className="orzeta-editorial-caption">
                   <span>{p.editorial.captionLabel}</span>
                   <p>{p.editorial.caption}</p>

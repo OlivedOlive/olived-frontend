@@ -8,7 +8,6 @@ import onhLogo from "@/assets/images/certs/onh-logo.png";
 import sgsLogo from "@/assets/images/certs/sgs-logo.svg";
 import grovesHarvest from "@/assets/images/groves-harvest.jpg";
 import heritage from "@/assets/images/heritage.jpg";
-import orzetaPackshot from "@/assets/images/orzeta-packshot.jpg";
 import { EnquiryForm } from "@/components/forms/EnquiryForm";
 import {
   ArrowRight,
@@ -19,6 +18,7 @@ import {
   PhoneIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
+import { OrzetaBottles } from "@/components/OrzetaBottles";
 import { HeroVideo } from "@/components/widgets/HeroVideo";
 import { alternates, localizeHref } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
@@ -317,8 +317,8 @@ export default async function HomePage() {
             </Link>
             <div className="solution-stack">
               <Link href={href("/packaged-products")} className="solution-card solution-card-stack">
-                <div className="solution-card-bg bg-charcoal">
-                  <Image src={orzetaPackshot} alt="" fill sizes="(max-width: 900px) 100vw, 40vw" className="object-cover" />
+                <div className="solution-card-bg solution-card-bottles">
+                  <OrzetaBottles />
                 </div>
                 <div className="solution-card-content">
                   <span className="solution-card-tag">{h.solutions.packaged.tag}</span>

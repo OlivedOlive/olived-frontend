@@ -1521,14 +1521,6 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   letter-spacing: 0;
   color: var(--olive-drop-deep);
 }
-.orzeta-packshot {
-  position: relative;
-  z-index: 2;
-  width: min(100%, 430px);
-  max-height: 560px;
-  object-fit: contain;
-  filter: drop-shadow(0 26px 30px rgba(25,25,23,0.16));
-}
 .orzeta-stage-card {
   position: absolute;
   z-index: 3;
@@ -1933,10 +1925,6 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   }
   .orzeta-stage-tags {
     justify-content: flex-start;
-  }
-  .orzeta-packshot {
-    width: min(100%, 310px);
-    max-height: none;
   }
   .orzeta-stage::before {
     bottom: 66px;

@@ -424,9 +424,6 @@ html, body { overflow-x: clip; }
 .solution-card-link { opacity: 1; }
 .solution-card-content { transform: none; }
 .solution-card::after { background: linear-gradient(to top, rgba(19, 18, 15, 0.9) 0%, rgba(19, 18, 15, 0.55) 30%, rgba(19, 18, 15, 0) 62%); }
-/* Packshot card: keep the bottles in the upper part so the copy sits on a clean dark base */
-.solution-card-stack .solution-card-bg img { object-position: center 20%; }
-.solution-card-stack::after { background: linear-gradient(to top, rgba(19, 18, 15, 0.96) 0%, rgba(19, 18, 15, 0.8) 38%, rgba(19, 18, 15, 0) 70%); }
 .solution-card:hover .solution-card-bg { transform: scale(1.06); }
 .solution-region-tags span { border-radius: 999px; padding: 5px 12px; }
 

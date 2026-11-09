@@ -63,7 +63,6 @@ strong { font-weight: 600; }
   .solution-card-stack::after {
     background: linear-gradient(to top, rgba(20, 24, 16, 0.96) 0%, rgba(20, 24, 16, 0.86) 46%, rgba(20, 24, 16, 0) 74%);
   }
-  .solution-card-stack .solution-card-bg img { object-position: center top; }
 }
 
 /* ---- Labels: a small dot and sentence case replace the spaced capitals ---- */
@@ -186,6 +185,74 @@ h1 em, h2 em, .hero-title em { color: var(--gold); }
 .orzeta-format-card-olive { background: var(--night); }
 .orzeta-title { font-weight: 400; }
 
+/* ---- ORZETA bottles ---- */
+.orzeta-trio {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(10px, 1.3vw, 18px);
+  height: clamp(340px, 31vw, 440px);
+  direction: ltr;
+}
+.orzeta-trio img {
+  width: auto;
+  height: 90%;
+  max-width: none;
+  filter: drop-shadow(0 18px 18px rgba(25, 25, 18, 0.26));
+  transition: translate 0.6s var(--ease-spring);
+}
+.orzeta-trio .orzeta-trio-grove { height: 100%; }
+
+/* Hero: a soft pedestal of light behind the line-up */
+.orzeta-stage { background: radial-gradient(90% 62% at 50% 36%, #fffdf7 0%, rgba(255, 253, 247, 0) 70%), linear-gradient(180deg, #ece7d8 0%, #ddd6c3 100%); }
+.orzeta-stage::before,
+.orzeta-stage::after { content: none; }
+.orzeta-stage-card { background: rgba(255, 253, 247, 0.82); }
+
+/* Collection cards: each bottle on a tint of its own label */
+.orzeta-product-card { padding: 0; }
+.orzeta-product-card::before { content: none; }
+.orzeta-product-card-body { flex: 1; padding: 28px 30px 0; }
+.orzeta-product-card-footer { margin: 24px 30px 0; padding: 18px 0 26px; }
+.orzeta-bottle-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 420px;
+  padding: 30px 0 26px;
+  overflow: hidden;
+}
+.orzeta-bottle-stage img {
+  width: auto;
+  height: 100%;
+  max-width: none;
+  filter: drop-shadow(0 16px 18px rgba(25, 25, 18, 0.28));
+  transition: translate 0.7s var(--ease-spring);
+}
+.orzeta-product-card:hover .orzeta-bottle-stage img { translate: 0 -12px; }
+.orzeta-bottle-stage-sun { background: linear-gradient(170deg, #f7dcc4 0%, #eeb48c 100%); }
+.orzeta-bottle-stage-grove { background: linear-gradient(170deg, #d7dfcb 0%, #a9b99a 100%); }
+.orzeta-bottle-stage-organic { background: linear-gradient(170deg, #f4efe2 0%, #ddd4bd 100%); }
+
+/* Editorial panel: one bottle, tall */
+.orzeta-editorial-stage { background: radial-gradient(90% 60% at 50% 40%, #fffdf7 0%, rgba(255, 253, 247, 0) 70%), linear-gradient(180deg, #ece7d8 0%, #ddd6c3 100%); }
+.orzeta-editorial-stage img {
+  width: auto;
+  height: clamp(420px, 40vw, 560px);
+  max-width: none;
+  filter: drop-shadow(0 22px 22px rgba(25, 25, 18, 0.28));
+}
+
+/* Home offer card: line-up on a warm light backdrop, copy on a dark base */
+.solution-card-bottles { background: radial-gradient(80% 60% at 50% 30%, #fffdf7 0%, rgba(255, 253, 247, 0) 70%), linear-gradient(180deg, #ece7d8 0%, #d9d2bf 100%); }
+.solution-card-bottles .orzeta-trio { position: absolute; inset: 4% 0 auto; height: 54%; }
+.solution-card-stack::after { background: linear-gradient(to top, rgba(20, 24, 16, 0.97) 0%, rgba(20, 24, 16, 0.95) 34%, rgba(20, 24, 16, 0) 40%); }
+@media (max-width: 1024px) {
+  .solution-card-stack { aspect-ratio: auto; min-height: 600px; }
+}
+
 /* ---- Footer ---- */
 .footer-col-title { font-size: 15px; font-weight: 500; }
 
@@ -202,6 +269,11 @@ h1 em, h2 em, .hero-title em { color: var(--gold); }
   .bento-hero-number { font-size: clamp(110px, 34vw, 150px); }
   .bento-number { font-size: 42px; }
   .bento-photo { min-height: 160px; }
+  .orzeta-trio { height: 320px; }
+  .orzeta-bottle-stage { height: 380px; }
+  .solution-card-stack { min-height: 640px; }
+  .solution-card-bottles .orzeta-trio { inset: 4% 0 auto; height: 44%; }
+  .solution-card-stack::after { background: linear-gradient(to top, rgba(20, 24, 16, 0.97) 0%, rgba(20, 24, 16, 0.95) 47%, rgba(20, 24, 16, 0) 52%); }
 }
 
 }

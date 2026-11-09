@@ -223,9 +223,9 @@ html[lang="ar"] .marquee-track li { font-style: normal; }
 }
 
 /* Packaged page (ORZETA) in dark mode.
-   The product "stages" stay light, like a lightbox, because the packshot photo has a
-   beige backdrop; inside them the light-theme colours are restored. Surfaces around
-   them, which were built from translucent sand, turn dark. */
+   The product "stages" stay light, like a lightbox, so the dark glass bottles stand out;
+   inside them the light-theme colours are restored. Surfaces around them, which were
+   built from translucent sand, turn dark. */
 [data-theme="dark"] :is(.orzeta-stage, .orzeta-editorial-stage) {
   --ink: #1c1a16;
   --mid: #6b6560;

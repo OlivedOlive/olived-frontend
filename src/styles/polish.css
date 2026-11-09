@@ -42,7 +42,6 @@
 .orzeta-format-card,
 .orzeta-editorial-panel { border-radius: var(--radius); }
 .orzeta-note-card { border-radius: var(--radius-sm); }
-.orzeta-packshot { border-radius: var(--radius); }
 
 /* Packaged: links stay on one line; the note wraps above them when space is tight */
 .orzeta-product-card-footer { flex-wrap: wrap; align-items: center; }
@@ -68,13 +67,7 @@
     padding: 74px 22px 22px;
   }
   .orzeta-stage-tags { left: auto; inset-inline-start: 24px; }
-  .orzeta-packshot {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    justify-self: center;
-    width: min(100%, 340px);
-    max-height: none;
-  }
+  .orzeta-stage .orzeta-trio { grid-column: 1 / -1; grid-row: 1; }
   .orzeta-stage-card { position: static; grid-row: 2; max-width: none; }
   /* The branch sits in the gap between the copy and the bottle panel */
   .orzeta-branch { left: 46%; }
@@ -145,8 +138,10 @@ html { scrollbar-width: thin; scrollbar-color: var(--gold) transparent; }
   /* The home hero drifts very slowly, like a held camera */
   .hero-media { animation: slow-zoom 24s ease-in-out infinite alternate; }
 
-  /* The bottles float gently */
-  .orzeta-packshot { animation: gentle-float 7s ease-in-out infinite alternate; }
+  /* The bottles float gently, slightly out of step */
+  .orzeta-stage .orzeta-trio img { animation: gentle-float 7s ease-in-out infinite alternate; }
+  .orzeta-stage .orzeta-trio .orzeta-trio-grove { animation-delay: -2.4s; }
+  .orzeta-stage .orzeta-trio .orzeta-trio-organic { animation-delay: -4.8s; }
 
   /* Press feedback */
   :is(.btn, .mn-btn-gold, .mn-btn-ghost, .mn-btn-ghost-light, .theme-toggle):active { scale: 0.97; }
