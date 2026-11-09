@@ -8,11 +8,12 @@
 :root {
   --inset: 12px;
   --panel-radius: 28px;
+  --cont-pad-in-panel: calc(var(--cont-pad) - var(--inset));
   --leaf: #c7d08f;
 }
 [data-theme="dark"] { --olive-green: #c7d08f; }
 @media (max-width: 768px) {
-  :root { --inset: 8px; --panel-radius: 20px; }
+  :root { --inset: 8px; --panel-radius: 20px; --cont-pad: 22px; }
 }
 
 /* Instrument Serif has one weight: never fake bold or italics on it */
@@ -37,9 +38,10 @@ strong { font-weight: 600; }
 .section-cream,
 .mn-heritage { margin: var(--inset); border-radius: var(--panel-radius); }
 
-/* Text inside a panel lines up with the logo and with text on the page */
-:is(.home-hero, .page-hero, .mn-hero, .fullbleed-section, .journey-section, .cta-band, .mn-philosophy, .mn-final, .section-cream, .mn-heritage, .site-footer) .container {
-  padding-inline: calc(var(--cont-pad) - var(--inset));
+/* Text inside a panel lines up with the logo and with text on the page. The container
+   utility outranks component rules, so this changes the value it reads. */
+:is(.home-hero, .page-hero, .mn-hero, .fullbleed-section, .journey-section, .cta-band, .mn-philosophy, .mn-final, .section-cream, .mn-heritage, .site-footer) {
+  --cont-pad: var(--cont-pad-in-panel);
 }
 
 /* Dark panels carry the olive colour */
@@ -64,6 +66,58 @@ strong { font-weight: 600; }
     background: linear-gradient(to top, rgba(20, 24, 16, 0.96) 0%, rgba(20, 24, 16, 0.86) 46%, rgba(20, 24, 16, 0) 74%);
   }
 }
+
+/* ---- Use the screen: blocks fill the width, sections sit closer together ---- */
+.container-wide { max-width: var(--cont-max); }
+.section-header { margin-bottom: clamp(28px, 3vw, 48px); }
+.lead { max-width: 920px; }
+.page-hero h1 { max-width: 1200px; }
+.page-hero-lead { max-width: 780px; }
+.page-hero { min-height: max(50vh, 460px); }
+.fullbleed-section { height: 66vh; }
+.fullbleed-text { max-width: 1120px; }
+
+.about-olived { padding: var(--section-v) 0; }
+.about-layout { grid-template-columns: 1fr 1.3fr; gap: clamp(32px, 4vw, 72px); }
+.about-image img { width: 100%; }
+.about-body { max-width: 72ch; }
+:is(.split-layout, .mn-heritage-grid, .export-layout, .cta-form-layout, .contact-layout, .mn-intro-grid) { gap: clamp(28px, 4vw, 72px); }
+.grade-panel.active { gap: clamp(28px, 4vw, 72px); }
+.cta-band { padding: clamp(40px, 4.6vw, 72px) 0; }
+.site-footer { padding-top: clamp(40px, 4vw, 60px); }
+
+/* Offer cards and product imagery grow with the screen */
+.solution-card-feature { min-height: clamp(520px, 36vw, 760px); }
+.orzeta-trio { height: clamp(340px, 30vw, 540px); }
+.orzeta-bottle-stage { height: clamp(380px, 26vw, 540px); }
+.orzeta-editorial-stage img { height: clamp(420px, 36vw, 640px); }
+.orzeta-collection-grid { margin-top: 0; }
+.orzeta-hero-section { padding: 108px 0 var(--section-vs); }
+.orzeta-hero-grid { min-height: 0; }
+.orzeta-hero-copy { max-width: none; }
+
+/* Bulk: the four steps were in a five-column grid, leaving a column empty */
+.pl-process { margin: 0; }
+@media (min-width: 1025px) {
+  .pl-process.pl-process-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Bulk FAQ: two columns instead of one narrow one */
+.faq-list { max-width: none; margin: 0; }
+@media (min-width: 1025px) {
+  .faq-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 4vw, 72px); align-items: start; }
+  .faq-item:nth-child(2) { border-top: 1px solid var(--border-light); }
+}
+
+/* Maison */
+.mn-intro { padding-top: var(--section-vs); }
+.mn-intro-grid { padding-bottom: clamp(28px, 3vw, 48px); margin-bottom: clamp(24px, 3vw, 40px); }
+.mn-figures { padding: clamp(20px, 2.4vw, 36px) 0 var(--section-vs); }
+.mn-heritage { padding: var(--section-vs) 0; }
+.mn-final { padding: var(--section-vs) 0; }
+.mn-philosophy { min-height: 56vh; }
+.mn-philosophy-content { max-width: 1120px; }
+.mn-final-cta { max-width: 860px; }
 
 /* ---- Labels: a small dot and sentence case replace the spaced capitals ---- */
 .about-eyebrow { display: inline-block; color: var(--olive-green); font-weight: 500; }

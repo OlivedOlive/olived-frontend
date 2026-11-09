@@ -71,10 +71,10 @@
     --t-xs: 14px;
 
     /* Spacing */
-    --section-v: clamp(80px, 10vw, 160px);
-    --section-vs: clamp(50px, 6vw, 100px);
-    --cont-max: 1440px;
-    --cont-pad: clamp(24px, 5vw, 80px);
+    --section-v: clamp(52px, 5.4vw, 92px);
+    --section-vs: clamp(40px, 3.8vw, 64px);
+    --cont-max: 2240px;
+    --cont-pad: clamp(22px, 3.2vw, 64px);
 
     /* Effects */
     --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);

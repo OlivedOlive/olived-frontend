@@ -66,7 +66,7 @@ export default async function QualityPage() {
                 src={laboratory}
                 alt={q.lab.imageAlt}
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="h-[480px] w-full object-cover"
+                className="h-[clamp(380px,32vw,640px)] w-full object-cover"
               />
             </div>
             <div className="reveal">
