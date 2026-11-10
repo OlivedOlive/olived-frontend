@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { DesignEditor } from "@/components/studio/DesignEditor";
+import { Loading } from "@/components/studio/Loading";
 import { StatusBadge } from "@/components/studio/StatusBadge";
 import { apiGet } from "@/lib/studio/api";
 import type { DesignDetail } from "@/lib/studio/types";
 
 export const metadata: Metadata = { title: "Design" };
 
-export default async function DesignPage({ params }: { params: Promise<{ id: string }> }) {
+// Everything here depends on the design id, so the whole page streams in behind one boundary.
+export default function DesignPage({ params }: PageProps<"/studio/designs/[id]">) {
+  return (
+    <Suspense fallback={<Loading label="Loading the design…" lines={4} />}>
+      <Design params={params} />
+    </Suspense>
+  );
+}
+
+async function Design({ params }: { params: PageProps<"/studio/designs/[id]">["params"] }) {
   const { id } = await params;
   const { design } = await apiGet<{ design: DesignDetail }>(`/designs/${encodeURIComponent(id)}`);
 
