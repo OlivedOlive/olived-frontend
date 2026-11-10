@@ -12,6 +12,9 @@ import { lightHeaderRoutes, navItems } from "@/lib/site";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
+/** "Get started" opens the OLIVED Studio sign-up (app/studio), which leads into the studio. */
+const STUDIO_SIGN_UP = "/studio/register";
+
 export function Header({ locale, t }: { locale: Locale; t: Dictionary["common"] }) {
   const fullPath = usePathname();
   // Menu state is keyed on the full path, so switching language also closes it.
@@ -112,6 +115,9 @@ export function Header({ locale, t }: { locale: Locale; t: Dictionary["common"] 
               <Link href={quoteHref} className="btn btn-outline-light">
                 {t.requestQuote}
               </Link>
+              <Link href={STUDIO_SIGN_UP} className="btn btn-gold">
+                {t.getStarted}
+              </Link>
               <button
                 ref={toggleRef}
                 type="button"
@@ -151,6 +157,9 @@ export function Header({ locale, t }: { locale: Locale; t: Dictionary["common"] 
         <div className="mobile-nav-cta">
           <Link href={quoteHref} className="btn btn-primary" onClick={() => closeMenu(false)}>
             {t.requestQuote}
+          </Link>
+          <Link href={STUDIO_SIGN_UP} className="btn btn-gold" onClick={() => closeMenu(false)}>
+            {t.getStarted}
           </Link>
         </div>
         <LanguageSwitch locale={locale} label={t.language} variant="menu" onNavigate={() => closeMenu(false)} />

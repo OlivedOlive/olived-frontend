@@ -14,6 +14,10 @@ The OLIVED website: Next.js 16 (App Router), TypeScript and Tailwind CSS 4. All 
 Set `NEXT_PUBLIC_API_URL` in `.env.local` (see [`.env.example`](.env.example)) to the olived-backend URL.
 It is fixed at build time, so set it before `npm run build`.
 
+**OLIVED Studio** (private label packaging design) is part of this site, under `/studio`. The header's
+*Get Started* button opens `/studio/register`, and a new account lands in `/studio/designs`. Its API is the
+`studio` module of olived-backend: browser calls to `/api/studio/*` are forwarded to `NEXT_PUBLIC_API_URL`.
+
 Security headers, including the Content-Security-Policy, are set in [`next.config.ts`](next.config.ts). If you add
 a third-party script, image or video, allow its origin there.
 
@@ -30,6 +34,10 @@ src/
       bulk-olive-oil/     /en/bulk-olive-oil
       packaged-products/  /en/packaged-products
       contact/            /en/contact
+    studio/               OLIVED Studio: its own root layout and styles (studio.css), English only
+      page.tsx            /studio
+      login/, register/   /studio/login, /studio/register
+      (app)/              pages behind login: /studio/designs, /studio/review
     global-not-found.tsx  404 page, in all three languages
     robots.ts, sitemap.ts
   i18n/                   languages, dictionaries (en / fr / ar) and helpers

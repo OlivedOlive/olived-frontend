@@ -11,8 +11,9 @@ const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
 
 /** The current language, read from the [lang] URL segment. Unknown languages 404. */
 export async function getLocale(): Promise<Locale> {
+  // Undefined outside app/[lang] (the studio has its own root layout without a language).
   const value = await lang();
-  if (!isLocale(value)) notFound();
+  if (!value || !isLocale(value)) notFound();
   return value;
 }
 
