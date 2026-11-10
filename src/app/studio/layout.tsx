@@ -26,13 +26,12 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// Every studio page reads the login cookie, so none of them can be prerendered.
-export const instant = false;
-
 export default function StudioRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${montserrat.variable}`}>
-      <body className="min-h-screen">
+      {/* Browser extensions (ColorZilla, Grammarly…) add attributes to <body> before React loads.
+          This ignores attribute differences on this tag only, like the website's root layout. */}
+      <body className="min-h-screen" suppressHydrationWarning>
         {/* With Cache Components, reading cookies() must happen inside a Suspense boundary. */}
         <Suspense>{children}</Suspense>
       </body>

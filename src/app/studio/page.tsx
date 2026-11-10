@@ -1,15 +1,15 @@
-import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import bottles from "@/assets/images/studio/bottles.jpg";
-import { SESSION_COOKIE } from "@/lib/studio/api";
+import { RedirectIfLoggedIn } from "@/components/studio/RedirectIfLoggedIn";
 
-export default async function HomePage() {
-  if ((await cookies()).has(SESSION_COOKIE)) redirect("/studio/designs");
-
+export default function HomePage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
+      <Suspense>
+        <RedirectIfLoggedIn />
+      </Suspense>
       <div className="grid content-center gap-6 px-4 py-16 sm:px-12 lg:px-16">
         <p className="text-sm font-medium tracking-widest text-gold">OLIVED STUDIO</p>
         <h1 className="text-5xl leading-tight">Your olive oil, your brand, ready for your market.</h1>
