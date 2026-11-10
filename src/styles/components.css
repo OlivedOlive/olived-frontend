@@ -1136,7 +1136,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   border-bottom: 1px solid var(--border-light);
   display: block;
 }
-.mobile-nav-cta { margin-top: 40px; }
+.mobile-nav-cta { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 
 /* ===== ABOUT SECTION (index.html) ===== */
 .about-olived {

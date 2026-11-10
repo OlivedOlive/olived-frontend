@@ -55,6 +55,7 @@ const ar: Dictionary = {
     mainNavigation: "القائمة الرئيسية",
     homeLink: "OLIVED — الصفحة الرئيسية",
     requestQuote: "اطلب عرض سعر",
+    getStarted: "ابدأ الآن",
     language: "اللغة",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",

@@ -22,8 +22,10 @@ function pickLocale(request: NextRequest): Locale {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasLocale = locales.some((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
+  // OLIVED Studio (app/studio) is English only and has no language prefix.
+  const isStudio = pathname === "/studio" || pathname.startsWith("/studio/");
   // Files (favicon.svg, og-image.jpg, robots.txt…) are served as they are.
-  if (hasLocale || /\.[a-z0-9]+$/i.test(pathname)) return;
+  if (hasLocale || isStudio || /\.[a-z0-9]+$/i.test(pathname)) return;
 
   const url = request.nextUrl.clone();
   url.pathname = `/${pickLocale(request)}${pathname === "/" ? "" : pathname}`;

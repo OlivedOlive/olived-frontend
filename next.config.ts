@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000").origin;
+const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000").replace(/\/$/, "");
 
 // No nonces: they are incompatible with the prerendered pages, so inline scripts stay allowed.
 const contentSecurityPolicy = [
@@ -32,6 +33,11 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  // Studio pages call /api/studio/* on this site, which is forwarded to olived-backend. The browser
+  // only talks to this site, so the studio login cookie needs no cross-site setup.
+  async rewrites() {
+    return [{ source: "/api/studio/:path*", destination: `${apiUrl}/api/studio/:path*` }];
   },
   async headers() {
     return [

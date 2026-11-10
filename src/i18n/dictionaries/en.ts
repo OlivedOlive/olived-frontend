@@ -58,6 +58,7 @@ const en = {
     mainNavigation: "Main navigation",
     homeLink: "OLIVED — home",
     requestQuote: "Request a Quote",
+    getStarted: "Get Started",
     language: "Language",
     openMenu: "Open menu",
     closeMenu: "Close menu",

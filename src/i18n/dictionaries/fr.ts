@@ -57,6 +57,7 @@ const fr: Dictionary = {
     mainNavigation: "Navigation principale",
     homeLink: "OLIVED — accueil",
     requestQuote: "Demander un devis",
+    getStarted: "Commencer",
     language: "Langue",
     openMenu: "Ouvrir le menu",
     closeMenu: "Fermer le menu",
