@@ -372,7 +372,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      {/* TODO: add specific export markets / countries once an official, confirmed list is available. */}
+      {/* Export regions and the "40+ countries" figure come from the 2026 catalogue (see home.export.lead). */}
 
       {/* ===== FINAL CTA + EXPORT ENQUIRY FORM ===== */}
       <div className="cta-band scroll-mt-[100px]" id="export-enquiry">

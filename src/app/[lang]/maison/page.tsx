@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // Numbers stay here; labels come from the dictionary in the same order.
-const figures = ["2006", "4", "1,500", "20+"];
+const figures = ["2006", "4", "1,500", "40+"];
 
 // "Owned groves" was changed to "plantations": olived.tn does not state ownership (see AUDIT.md).
 const finalStats = ["1,500", "3,000", "180"];

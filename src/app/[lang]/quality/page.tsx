@@ -30,6 +30,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const millImages = [mill1, mill2, mill3, mill4];
 
+// As listed in the 2026 catalogue. Names stay as they appear on the certificates.
+const certifications = ["ISO 22000", "EU Organic", "USDA Organic", "IOC Compliance", "Halal"];
+
 export default async function QualityPage() {
   const { locale, t } = await getDictionary();
   const q = t.quality;
@@ -88,7 +91,35 @@ export default async function QualityPage() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section-sm">
+        <div className="container">
+          <div className="section-header centered reveal">
+            <span className="eyebrow-dark">{q.process.eyebrow}</span>
+            <h2>{q.process.title}</h2>
+            <p className="lead">{q.process.lead}</p>
+          </div>
+          <div className="pl-process pl-process-8 reveal">
+            {q.process.steps.map((s) => (
+              <div className="pl-step" key={s.title}>
+                <h4>{s.title}</h4>
+                <p>{s.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-12 text-center reveal">
+            <span className="eyebrow-dark">{q.certsLabel}</span>
+            <div className="cert-strip gap-5 px-0 pt-6 pb-0">
+              {certifications.map((name) => (
+                <div className="cert-badge-plate is-wordmark" key={name}>
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-cream">
         <div className="container">
           <div className="section-header centered reveal">
             <span className="eyebrow-dark">{q.mills.eyebrow}</span>

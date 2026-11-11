@@ -12,7 +12,7 @@ export const site = {
     country: "Tunisia",
     countryCode: "TN",
   },
-  tagline: "Premium Tunisian olive oil for the world's most demanding markets. Bulk and packaged solutions.",
+  tagline: "Producer and exporter of Tunisian extra virgin olive oil. Home of the ORZETA brand.",
 } as const;
 
 /** Next.js replaces (not merges) openGraph per page, so pages that set their own must spread this. */

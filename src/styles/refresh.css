@@ -1,26 +1,28 @@
 /*
  * OLIVED — current visual system, loaded last.
- * Olive colour palette, inset rounded panels instead of edge-to-edge bands, sentence-case
+ * Olive colour palette, edge-to-edge bands, sentence-case
  * labels, an oversized editorial hero and photo tiles. Tokens live in app/globals.css.
  */
 @layer components {
 
 :root {
-  --inset: 12px;
-  --panel-radius: 28px;
+  /* Sections run edge to edge. Give these a size (e.g. 12px / 28px) to turn every band back
+     into an inset rounded panel. Keep the px unit: they are used inside calc(). */
+  --inset: 0px;
+  --panel-radius: 0px;
   --cont-pad-in-panel: calc(var(--cont-pad) - var(--inset));
   --leaf: #c7d08f;
 }
 [data-theme="dark"] { --olive-green: #c7d08f; }
 @media (max-width: 768px) {
-  :root { --inset: 8px; --panel-radius: 20px; --cont-pad: 22px; }
+  :root { --cont-pad: 22px; }
 }
 
 /* Instrument Serif has one weight: never fake bold or italics on it */
 html { font-synthesis: none; }
 strong { font-weight: 600; }
 
-/* ---- Inset panels ---- */
+/* ---- Section bands (full width while --inset is 0) ---- */
 :is(.home-hero, .page-hero, .mn-hero, .fullbleed-section, .journey-section, .cta-band, .mn-philosophy, .mn-final) {
   margin: var(--inset);
   border-radius: var(--panel-radius);
@@ -92,7 +94,27 @@ strong { font-weight: 600; }
 .orzeta-bottle-stage { height: clamp(380px, 26vw, 540px); }
 .orzeta-editorial-stage img { height: clamp(420px, 36vw, 640px); }
 .orzeta-collection-grid { margin-top: 0; }
-.orzeta-hero-section { padding: 108px 0 var(--section-vs); }
+.orzeta-hero-section {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding: 108px 0 var(--section-vs);
+}
+.orzeta-hero-section > .container-wide { width: 100%; }
+/* The Packaged hero fills the screen: the shell is no longer a card inside the section. */
+.orzeta-hero-shell,
+[data-theme="dark"] .orzeta-hero-shell {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+/* The vertical rail lived in the card's padding, so it goes with the card; the text then
+   lines up with the logo. */
+.orzeta-side-rail { display: none; }
+.orzeta-hero-copy { padding-left: 0; padding-right: 0; }
 .orzeta-hero-grid { min-height: 0; }
 .orzeta-hero-copy { max-width: none; }
 
@@ -100,6 +122,22 @@ strong { font-weight: 600; }
 .pl-process { margin: 0; }
 @media (min-width: 1025px) {
   .pl-process.pl-process-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Quality: eight steps in two rows of four (same look as the four-step process) */
+.pl-process.pl-process-8 { grid-template-columns: repeat(4, 1fr); }
+.pl-process-8 .pl-step:nth-child(4n) { border-right: none; }
+.pl-process-8 .pl-step:nth-child(-n + 4) { border-bottom: 1px solid var(--border-light); }
+@media (max-width: 1024px) {
+  .pl-process.pl-process-8 { grid-template-columns: 1fr 1fr; }
+  .pl-process-8 .pl-step:nth-child(odd) { border-right: 1px solid var(--border-light); }
+  .pl-process-8 .pl-step:nth-child(even) { border-right: none; }
+  .pl-process-8 .pl-step:nth-child(-n + 6) { border-bottom: 1px solid var(--border-light); }
+}
+@media (max-width: 640px) {
+  .pl-process.pl-process-8 { grid-template-columns: 1fr; }
+  .pl-process-8 .pl-step:nth-child(n) { border-right: none; }
+  .pl-process-8 .pl-step:last-child { border-bottom: none; }
 }
 
 /* Bulk FAQ: two columns instead of one narrow one */
