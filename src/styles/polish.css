@@ -100,6 +100,17 @@ html { scrollbar-width: thin; scrollbar-color: var(--gold) transparent; }
 
 /* ===================== MOTION ===================== */
 
+/* Smooth scrolling on every page (components/layout/SmoothScroll.tsx, Lenis) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* The header slides away on scroll down and returns on scroll up */
+.site-header.nav-autohide {
+  transition: padding var(--t-speed) var(--ease), background var(--t-speed) var(--ease), box-shadow var(--t-speed) var(--ease), transform 0.45s var(--ease);
+}
+.site-header.nav-hidden:not(.is-menu-open) { transform: translateY(-110%); }
+
 @media (prefers-reduced-motion: no-preference) {
 
   /* Sections rise into place. An animation, not a transition: card hover transitions used
@@ -220,9 +231,10 @@ html { scrollbar-width: thin; scrollbar-color: var(--gold) transparent; }
   }
 }
 
+/* Content comes into focus as it rises: the same blur-in as the home page */
 @keyframes reveal-in {
-  from { opacity: 0; transform: translateY(26px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(26px); filter: blur(12px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
 }
 @keyframes reveal-wipe {
   from { opacity: 0; clip-path: inset(10% 0 10% 0 round var(--radius)); }

@@ -199,6 +199,126 @@ const fr: Dictionary = {
         "Devis sur mesure",
       ],
     },
+    landing: {
+      hero: {
+        title: ["L'huile d'olive tunisienne,", "de nos oliveraies au monde entier"],
+        link: "Découvrir notre Maison",
+        card: { title: "Recevez une offre export sur mesure", text: "Réponse sous 24 heures ouvrées", button: "Demander un devis" },
+        bottleAlt: "Huile d'olive vierge extra ORZETA Grove Signature",
+      },
+      house: {
+        tag: "La maison",
+        left: { unit: "ha", text: "De plantations d'oliviers en propre" },
+        right: { unit: "t", text: "D'huile d'olive produites chaque année" },
+        text: "Depuis des millénaires, la Tunisie est un berceau de l'huile d'olive. Olived prolonge cet héritage. Récoltée, triturée, conditionnée et livrée directement par nos soins, notre huile d'olive offre une traçabilité totale et une qualité constante, année après année. Une seule source, de l'oliveraie à la bouteille.",
+      },
+      offer: {
+        tag: "Notre offre",
+        title: ["L'huile d'olive tunisienne,", "trois façons de s'approvisionner"],
+        button: "Demander un devis",
+        cards: [
+          { title: "Huile d'olive en vrac", text: "Vierge extra, conventionnelle et biologique. Du fût et du conteneur IBC au flexitank." },
+          { title: "ORZETA, notre marque", text: "Une origine, trois expressions : Sun pour cuire, Grove pour finir à cru, Organic." },
+          { title: "Marque de distributeur", text: "La même huile en verre, PET ou bidon métallique, sous votre propre étiquette." },
+        ],
+        photoAlts: [
+          "Conteneurs pour l'export d'huile d'olive en vrac",
+          "Les trois bouteilles ORZETA : Sun, Grove et Organic",
+          "Trois bouteilles d'huile d'olive aux étiquettes vierges, prêtes pour votre marque",
+        ],
+      },
+      process: {
+        tag: "Le processus",
+        steps: [
+          {
+            name: "Récolte",
+            title: "Cueillies à la main, à maturité optimale.",
+            text: "Récolte manuelle, puis transport rapide en caisses ventilées pour garder la fraîcheur du fruit.",
+          },
+          {
+            name: "Trituration",
+            title: "Triturées à froid en quelques heures.",
+            text: "Trituration à 27 °C au plus, dans les heures qui suivent la récolte, pour préserver les arômes.",
+          },
+          {
+            name: "Stockage",
+            title: "Conservée dans l'inox.",
+            text: "900 t de cuves sous atmosphère à température contrôlée, avec une filtration douce.",
+          },
+          {
+            name: "Contrôle",
+            title: "Analysée par des laboratoires accrédités.",
+            text: "Un laboratoire certifié COI, et une analyse SGS de chaque produit avant l'export.",
+          },
+          {
+            name: "Expédition",
+            title: "Traçable de la parcelle à la bouteille.",
+            text: "En bouteille ou en vrac, avec la documentation export et une traçabilité totale.",
+          },
+        ],
+      },
+      range: {
+        tag: "La gamme ORZETA",
+        title: ["Une origine,", "trois expressions"],
+        tabs: ["Verre", "PET", "Bidon"],
+        formats: ["Marasca de 250 ml à 1 L · Dorica de 250 à 750 ml", "1 L, 3 L et 5 L", "1 L, 3 L et 5 L"],
+        button: "Voir la gamme",
+        useLabel: "Usage",
+        formatsLabel: "Formats",
+        rows: [
+          {
+            name: "ORZETA Sun Signature",
+            role: "L'essentiel du quotidien",
+            use: "Pour cuire",
+            text: "Huile d'olive vierge extra 100 % tunisienne, extraite à froid. Solaire, généreuse et méditerranéenne : l'huile de la poêle, du rôti et du four. Cuisinez avec le soleil.",
+            detail: "Poêlées, rôtis, légumes au four",
+          },
+          {
+            name: "ORZETA Grove Signature",
+            role: "L'essentiel à table",
+            use: "Pour finir à cru",
+            text: "Huile d'olive vierge extra 100 % tunisienne, extraite à froid. Élégante, fraîche et aromatique : le dernier trait qui achève le plat.",
+            detail: "Salades, burrata, houmous, pain",
+          },
+          {
+            name: "ORZETA Organic Signature",
+            role: "L'essentiel bio",
+            use: "Certifiée biologique",
+            text: "Huile d'olive vierge extra 100 % tunisienne, certifiée biologique et extraite à froid. Authentique et attentive, pensée notamment pour les seniors.",
+            detail: "Une cuisine attentive au quotidien",
+          },
+        ],
+      },
+      edge: {
+        tag: "Notre avantage",
+        title: ["Une seule source,", "chaque goutte traçable"],
+        cards: [
+          { title: "Source unique", text: "Récoltée, triturée, conditionnée et livrée directement par nos soins." },
+          { title: "Une capacité fiable", text: "3 000 t par an, 1 500 ha de plantations et 900 t de stockage." },
+          { title: "Une qualité vérifiée", text: "Laboratoire certifié COI, exportations vérifiées par l'ONH, analyse SGS avant expédition." },
+          { title: "Prêt pour votre marché", text: "Verre, PET, bidon ou vrac, avec la documentation export nécessaire." },
+        ],
+      },
+      figures: {
+        tag: "Les chiffres",
+        labels: [
+          "Hectares de plantations d'oliviers",
+          "Tonnes d'huile d'olive par an",
+          "Tonnes de capacité de stockage",
+          "Pays desservis",
+        ],
+      },
+      help: {
+        tag: "Aide",
+        title: ["Encore des questions ?", "Voici les réponses"],
+      },
+      start: {
+        tag: "Commencer",
+        title: "Prêt à vous approvisionner en huile d'olive tunisienne ?",
+        text: "Nous approvisionnons importateurs, distributeurs et marques de distributeur dans plus de 40 pays.",
+      },
+      wordmark: "Olived",
+    },
     cta: {
       title: "Dites-nous ce dont vous avez besoin",
       text: "Indiquez votre produit, le volume estimé et la destination. Notre équipe export vous répondra sous 24 heures ouvrées.",
