@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Amiri, IBM_Plex_Sans_Arabic, Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { Amiri, IBM_Plex_Sans_Arabic, Instrument_Sans, Instrument_Serif, Inter_Tight } from "next/font/google";
 import { InlineScript } from "@/components/InlineScript";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { PageEffects } from "@/components/layout/PageEffects";
 import { RouteShell } from "@/components/layout/RouteShell";
+import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
 import { localeDir, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
@@ -22,6 +23,14 @@ const serif = Instrument_Serif({
 const sans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-sans-face",
+  display: "swap",
+});
+
+// The home page landing design uses one neo-grotesque sans for headings and text.
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-inter-tight",
   display: "swap",
 });
 
@@ -79,7 +88,7 @@ const themeScript = `(function(){var d=document.documentElement,t;try{t=localSto
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const { locale, t } = await getDictionary();
-  const fonts = [serif.variable, sans.variable, amiri.variable, plexArabic.variable].join(" ");
+  const fonts = [serif.variable, sans.variable, interTight.variable, amiri.variable, plexArabic.variable].join(" ");
 
   return (
     <html lang={locale} dir={localeDir[locale]} className={fonts} data-scroll-behavior="smooth" suppressHydrationWarning>
@@ -89,7 +98,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
       <body suppressHydrationWarning>
         {/* Without JavaScript, scroll-reveal content must still be visible. */}
         <noscript>
-          <style>{`.reveal,.reveal>*,.fade-in{opacity:1!important;transform:none!important}`}</style>
+          <style>{`.reveal,.reveal>*,.fade-in,[data-rv],.ld-line>span{opacity:1!important;transform:none!important;filter:none!important}`}</style>
         </noscript>
         <RouteShell>
           <Header locale={locale} t={t.common} />
@@ -98,6 +107,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         </RouteShell>
         <WhatsAppFloat label={t.common.whatsapp} />
         <PageEffects />
+        <SmoothScroll />
       </body>
     </html>
   );

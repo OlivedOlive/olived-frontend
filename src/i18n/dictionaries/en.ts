@@ -200,6 +200,118 @@ const en = {
         "Tailored quotation",
       ],
     },
+    landing: {
+      hero: {
+        title: ["Tunisian olive oil,", "from our groves to the world"],
+        link: "Discover our Maison",
+        card: { title: "Get a tailored export offer", text: "A reply within 24 business hours", button: "Request a quote" },
+        bottleAlt: "ORZETA Grove Signature extra virgin olive oil",
+      },
+      house: {
+        tag: "The house",
+        left: { unit: "ha", text: "Of our own olive plantations" },
+        right: { unit: "t", text: "Of olive oil produced every year" },
+        text: "For millennia, Tunisia has been a cradle of olive oil. Olived carries this legacy forward. Harvested, crushed, packaged and delivered directly by us, our olive oil offers full traceability and consistent quality, year after year. One source, from the grove to the bottle.",
+      },
+      offer: {
+        tag: "Our offer",
+        title: ["Tunisian olive oil,", "three ways to source it"],
+        button: "Request a quote",
+        cards: [
+          { title: "Bulk olive oil", text: "Extra virgin, conventional and organic. From barrels and IBC totes to flexitanks." },
+          { title: "ORZETA, our brand", text: "One origin, three expressions: Sun for cooking, Grove for finishing, Organic." },
+          { title: "Private label", text: "The same oil in glass, PET or tin, bottled under your own label." },
+        ],
+        photoAlts: [
+          "Shipping containers for bulk olive oil export",
+          "The three ORZETA bottles: Sun, Grove and Organic",
+          "Three olive oil bottles with blank labels, ready for your brand",
+        ],
+      },
+      process: {
+        tag: "The process",
+        steps: [
+          {
+            name: "Harvest",
+            title: "Picked by hand, at optimal ripeness.",
+            text: "Manual harvest, then fast transport in ventilated crates to keep the fruit fresh.",
+          },
+          { name: "Mill", title: "Cold milled within hours.", text: "Milling at 27 °C or below, hours after harvest, to preserve the aromas." },
+          {
+            name: "Store",
+            title: "Kept in stainless steel.",
+            text: "900 t of tanks in a temperature-controlled atmosphere, with gentle filtration.",
+          },
+          {
+            name: "Verify",
+            title: "Tested by accredited laboratories.",
+            text: "An IOC-certified laboratory, and SGS analysis of every product before export.",
+          },
+          { name: "Ship", title: "Traceable from plot to bottle.", text: "Bottled or in bulk, with export documentation and full traceability." },
+        ],
+      },
+      range: {
+        tag: "The ORZETA range",
+        title: ["One origin,", "three expressions"],
+        tabs: ["Glass", "PET", "Tin"],
+        formats: ["Marasca 250 ml to 1 L · Dorica 250 to 750 ml", "1 L, 3 L and 5 L", "1 L, 3 L and 5 L"],
+        button: "See the range",
+        useLabel: "Use",
+        formatsLabel: "Formats",
+        rows: [
+          {
+            name: "ORZETA Sun Signature",
+            role: "Everyday essential",
+            use: "For cooking",
+            text: "100% Tunisian extra virgin olive oil, cold extracted. Solar, generous and Mediterranean: the oil for the pan, the roast and the oven. Cook with the sun.",
+            detail: "Pan-frying, roasting, oven-baked vegetables",
+          },
+          {
+            name: "ORZETA Grove Signature",
+            role: "Finishing essential",
+            use: "For finishing raw",
+            text: "100% Tunisian extra virgin olive oil, cold extracted. Elegant, fresh and aromatic: the last drizzle that completes the dish. Finish with the grove.",
+            detail: "Salads, burrata, hummus, bread",
+          },
+          {
+            name: "ORZETA Organic Signature",
+            role: "Organic essential",
+            use: "Certified organic",
+            text: "100% Tunisian extra virgin olive oil, certified organic and cold extracted. Authentic and attentive, designed notably with seniors in mind.",
+            detail: "Attentive everyday cooking",
+          },
+        ],
+      },
+      edge: {
+        tag: "Our advantage",
+        title: ["One source,", "every drop traceable"],
+        cards: [
+          { title: "Single source", text: "Harvested, crushed, packaged and delivered directly by us." },
+          { title: "Scale you can rely on", text: "3,000 t a year, 1,500 ha of plantations and 900 t of storage." },
+          { title: "Verified quality", text: "IOC-certified laboratory, ONH-verified exports, SGS analysis before shipment." },
+          { title: "Ready for your market", text: "Glass, PET, tin or bulk, with the export documentation you need." },
+        ],
+      },
+      figures: {
+        tag: "The figures",
+        labels: [
+          "Hectares of olive plantations",
+          "Tonnes of olive oil a year",
+          "Tonnes of storage capacity",
+          "Countries served",
+        ],
+      },
+      help: {
+        tag: "Help",
+        title: ["Still curious?", "Here are the answers"],
+      },
+      start: {
+        tag: "Get started",
+        title: "Ready to source Tunisian olive oil?",
+        text: "We supply importers, distributors and private labels in more than 40 countries.",
+      },
+      wordmark: "Olived",
+    },
     cta: {
       title: "Tell Us What You Need",
       text: "Share your product, estimated volume and destination. Our export team will respond within 24 business hours.",

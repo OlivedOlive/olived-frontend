@@ -2,27 +2,23 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import bulkHarvest from "@/assets/images/bulk-olives-harvest.jpg";
-import fdaLogo from "@/assets/images/certs/fda-logo.svg";
-import iocLogo from "@/assets/images/certs/ioc-logo.png";
-import onhLogo from "@/assets/images/certs/onh-logo.png";
-import sgsLogo from "@/assets/images/certs/sgs-logo.svg";
-import grovesHarvest from "@/assets/images/groves-harvest.jpg";
+import evoo from "@/assets/images/evoo-conventional.jpg";
+import flexitank from "@/assets/images/format-flexitank.jpg";
 import heritage from "@/assets/images/heritage.jpg";
+import laboratory from "@/assets/images/laboratory.jpg";
+import mill1 from "@/assets/images/mill-1.jpg";
+import privateLabel from "@/assets/images/private-label.png";
+import millennialTrees from "@/assets/images/millennial-trees.jpg";
+import qualityHero from "@/assets/images/quality-hero.jpg";
 import { EnquiryForm } from "@/components/forms/EnquiryForm";
-import {
-  ArrowRight,
-  ArrowSmall,
-  BadgeCheckIcon,
-  ClipboardCheckIcon,
-  ContainerIcon,
-  PhoneIcon,
-  ShieldCheckIcon,
-} from "@/components/icons";
-import { OrzetaBottles } from "@/components/OrzetaBottles";
-import { HeroVideo } from "@/components/widgets/HeroVideo";
+import { Faq } from "@/components/landing/Faq";
+import { LandingEffects } from "@/components/landing/LandingEffects";
+import { icons, Lines, SplitButton, Tag } from "@/components/landing/parts";
+import { Process } from "@/components/landing/Process";
+import { RangeAccordion } from "@/components/landing/RangeAccordion";
+import { orzetaBottles, OrzetaBottles } from "@/components/OrzetaBottles";
 import { alternates, localizeHref } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { rich } from "@/i18n/rich";
 import { openGraphDefaults, site } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -60,334 +56,231 @@ const organizationJsonLd = (description: string) => ({
   },
 });
 
-// Numbers stay here; their labels come from the dictionary in the same order.
-const stats = [
-  { target: 1500 },
-  { target: 3000 },
-  { target: 900 },
-  { target: 180 },
-  { target: 1916, plain: true, photo: heritage },
-  { target: 2006, plain: true, photo: grovesHarvest },
-];
+// Numbers and links stay here; their labels come from the dictionary in the same order.
+const offerLinks = ["/bulk-olive-oil", "/packaged-products", "/contact"];
+const offerIcons = [icons.plus, icons.leaf, icons.doc];
+const edgeIcons = [icons.leaf, icons.scale, icons.check, icons.globe];
+const figures = [{ target: 1500 }, { target: 3000 }, { target: 900 }, { target: 40, suffix: "+" }];
+const processThumbs = [mill1, bulkHarvest, evoo, laboratory, flexitank];
+const rangeImages = [orzetaBottles.sun, orzetaBottles.grove, orzetaBottles.organic];
 
-const exportIcons = [ShieldCheckIcon, ContainerIcon, ClipboardCheckIcon, BadgeCheckIcon, PhoneIcon];
+const formatNumber = (n: number) => n.toLocaleString("en-US");
 
+/**
+ * The home page: a hero, eight numbered sections and the quote form. The scroll behaviour
+ * (smooth scrolling, reveals, parallax) is added by LandingEffects; styles are in landing.css.
+ */
 export default async function HomePage() {
   const { locale, t } = await getDictionary();
-  const h = t.home;
+  const l = t.home.landing;
   const href = (path: string) => localizeHref(locale, path);
-  const number = (n: number, plain?: boolean) => (plain ? String(n) : n.toLocaleString("en-US"));
+
+  const offerCard = (index: number) => {
+    const card = l.offer.cards[index];
+    return (
+      <Link href={href(offerLinks[index])} className="ld-tile ld-card" data-rv>
+        <i className="ld-icon">{offerIcons[index]}</i>
+        <h3>{card.title}</h3>
+        <p>{card.text}</p>
+      </Link>
+    );
+  };
 
   return (
-    <>
+    <div className="ld">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(t.meta.siteDescription)).replace(/</g, "\\u003c") }}
       />
+      <LandingEffects />
 
       {/* ===== HERO ===== */}
-      <section className="home-hero scroll-mt-[100px]" id="home">
-        <div className="hero-media">
-          <HeroVideo />
-        </div>
-        <div className="hero-overlay" />
-        <div className="container">
-          <div className="hero-content reveal">
-            <span className="hero-eyebrow">{h.hero.eyebrow}</span>
-            <h1 className="hero-title">{rich(h.hero.title)}</h1>
-            <p className="hero-subtitle">{h.hero.subtitle}</p>
-            <div className="hero-actions">
-              <a href="#export-enquiry" className="btn btn-gold">
-                {h.hero.primary}
-              </a>
-              <a href="#sourcing" className="btn btn-outline-light">
-                {h.hero.secondary}
-              </a>
-            </div>
-            <p className="hero-micro-proof">{h.hero.proof}</p>
-          </div>
-        </div>
-        <div className="hero-facts">
-          <div className="container">
-            <dl className="hero-facts-grid">
-              {h.hero.facts.map((f) => (
-                <div key={f.label} className="hero-fact">
-                  <dt>{f.label}</dt>
-                  <dd>{f.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== PROVENANCE MARQUEE ===== */}
-      <div className="provenance-marquee" aria-label={h.marqueeLabel}>
-        <ul className="marquee-track">
-          {[0, 1].map((copy) =>
-            h.provenance.map((item) => (
-              <li key={`${copy}-${item}`} aria-hidden={copy === 1 ? true : undefined}>
-                {item}
-              </li>
-            )),
-          )}
-        </ul>
-      </div>
-
-      {/* ===== SOURCING SELECTOR ===== */}
-      <section className="section-sm scroll-mt-[100px]" id="sourcing">
-        <div className="container">
-          <div className="section-header centered reveal">
-            <span className="eyebrow-dark">{h.sourcing.eyebrow}</span>
-            <h2>{h.sourcing.title}</h2>
-          </div>
-          <div className="card-grid card-grid-2">
-            {(
-              [
-                ["/bulk-olive-oil", h.sourcing.bulk, ""],
-                ["/packaged-products", h.sourcing.packaged, " reveal-delay-1"],
-              ] as const
-            ).map(([path, card, delay]) => (
-              <Link key={path} href={href(path)} className={`card sourcing-card reveal${delay}`}>
-                <span className="card-arrow" aria-hidden="true">
-                  <ArrowRight size={20} />
-                </span>
-                <span className="eyebrow">{card.eyebrow}</span>
-                <h4>{card.title}</h4>
-                <p>{card.text}</p>
-                <span className="text-link">
-                  {card.link} <ArrowSmall />
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== TRUST BAR ===== */}
-      <section className="section-cream trust-bar">
-        <div className="container">
-          <span className="eyebrow-dark trust-bar-title">{h.trust.title}</span>
-          <div className="cert-strip trust-bar-strip">
-            <div className="cert-badge-plate">
-              <Image src={iocLogo} alt="International Olive Council" />
-            </div>
-            <div className="cert-badge-plate">
-              <Image src={onhLogo} alt="Office National de l'Huile (ONH)" />
-            </div>
-            <div className="cert-badge-plate">
-              <Image src={fdaLogo} alt="U.S. Food & Drug Administration (FDA)" />
-            </div>
-            <div className="cert-badge-plate">
-              <Image src={sgsLogo} alt="SGS" />
-            </div>
-            <div className="cert-badge-plate is-wordmark">Oléa Conseil</div>
-          </div>
-          <p className="trust-bar-text">{h.trust.text}</p>
-          <Link href={href("/quality")} className="text-link trust-bar-link">
-            {h.trust.link}
+      <section className="ld-hero ld-photo" id="home">
+        <Image src="/hero-poster.webp" alt="" fill priority sizes="100vw" data-parallax />
+        <div className="ld-hero-top" data-rv-group>
+          <Lines as="h1" lines={l.hero.title} />
+          <Link href={href("/maison")} className="ld-link" data-rv>
+            {l.hero.link} <span aria-hidden="true">→</span>
           </Link>
         </div>
-      </section>
-
-      {/* ===== ABOUT ===== */}
-      <section className="section about-olived">
-        <div className="container">
-          <div className="about-layout">
-            <div className="about-text reveal">
-              <span className="about-eyebrow">{h.about.eyebrow}</span>
-              <h2 className="about-title">{h.about.title}</h2>
-              <p className="about-body">{h.about.p1}</p>
-              <p className="about-body">{h.about.p2}</p>
-              <div className="about-divider" />
-              <Link href={href("/maison")} className="about-link">
-                {h.about.link}
-                <ArrowRight />
-              </Link>
-            </div>
-            <div className="about-image reveal reveal-delay-2">
-              <Image src={heritage} alt={h.about.imageAlt} sizes="(max-width: 1024px) 100vw, 50vw" placeholder="blur" />
-            </div>
+        <div className="ld-hero-card" data-rv>
+          <div className="ld-hero-thumb">
+            <Image src={orzetaBottles.grove} alt={l.hero.bottleAlt} sizes="90px" />
+          </div>
+          <div>
+            <h2>{l.hero.card.title}</h2>
+            <p>{l.hero.card.text}</p>
+            <SplitButton href="#export-enquiry" light>
+              {l.hero.card.button}
+            </SplitButton>
           </div>
         </div>
+        <p className="ld-wordmark" aria-hidden="true">
+          {l.wordmark}
+        </p>
       </section>
 
-      {/* ===== STATS ===== */}
-      <section className="section-sm stats-clean-section scroll-mt-[100px]" id="stats-section">
-        <div className="container">
-          <div className="section-header centered reveal">
-            <span className="eyebrow-dark">{h.stats.eyebrow}</span>
-            <h2>{h.stats.title}</h2>
+      {/* ===== 01 THE HOUSE ===== */}
+      <section className="ld-section ld-house">
+        <div className="ld-center" data-rv-group>
+          <Tag n={1}>{l.house.tag}</Tag>
+        </div>
+        <div className="ld-island" data-rv-group>
+          <div className="ld-stat ld-stat-left" data-rv>
+            <strong>
+              <span className="count-up" data-target={1500}>
+                {formatNumber(1500)}
+              </span>{" "}
+              {l.house.left.unit}
+            </strong>
+            <p>{l.house.left.text}</p>
           </div>
-          <div className="stats-bento">
-            <div className="bento-tile bento-hero reveal">
-              <span className="eyebrow">{h.stats.heroEyebrow}</span>
-              <div className="bento-hero-number">
-                <span className="count-up" data-target="2" data-suffix={h.stats.heroSuffix}>
-                  2{h.stats.heroSuffix}
-                </span>
-              </div>
-              <div>
-                <div className="bento-hero-label">{h.stats.heroLabel}</div>
-                <div className="bento-hero-sub">{h.stats.heroSub}</div>
-              </div>
-            </div>
-            {stats.map((s, i) => (
-              <div
-                key={s.target}
-                className={`bento-tile reveal reveal-delay-${(i % 4) + 1}${s.plain ? " bento-wide bento-photo" : ""}`}
-              >
-                {s.photo && <Image src={s.photo} alt="" fill sizes="(max-width: 480px) 50vw, (max-width: 1024px) 100vw, 50vw" />}
-                <div className="bento-number">
-                  <span className="count-up" data-target={s.target} data-plain={s.plain ? "true" : undefined}>
-                    {number(s.target, s.plain)}
-                  </span>
-                </div>
-                <div className="bento-label">{h.stats.labels[i]}</div>
-              </div>
-            ))}
+          <div className="ld-island-art" data-rv>
+            <OrzetaBottles />
+          </div>
+          <div className="ld-stat ld-stat-right" data-rv>
+            <strong>
+              <span className="count-up" data-target={3000}>
+                {formatNumber(3000)}
+              </span>{" "}
+              {l.house.right.unit}
+            </strong>
+            <p>{l.house.right.text}</p>
           </div>
         </div>
+        <p className="ld-bigtext" data-scrolltext>
+          {l.house.text.split(" ").map((word, i) => (
+            <span key={i}>{word} </span>
+          ))}
+        </p>
       </section>
 
-      {/* ===== FULLBLEED IMAGE ===== */}
-      <div className="fullbleed-section">
-        <Image src={grovesHarvest} alt={h.fullbleed.imageAlt} sizes="100vw" placeholder="blur" />
-        <div className="fullbleed-overlay">
-          <div className="container">
-            <div className="fullbleed-text reveal">
-              <span className="eyebrow">{h.fullbleed.eyebrow}</span>
-              <h2>{h.fullbleed.title}</h2>
-              <Link href={href("/maison")} className="text-link text-link-light mt-7">
-                {h.fullbleed.link} <ArrowRight />
-              </Link>
-            </div>
+      {/* ===== 02 OUR OFFER ===== */}
+      <section className="ld-section" id="sourcing">
+        <div className="ld-head" data-rv-group>
+          <div>
+            <Tag n={2}>{l.offer.tag}</Tag>
+            <Lines lines={l.offer.title} soft />
+          </div>
+          <div className="ld-head-side" data-rv>
+            <SplitButton href="#export-enquiry">{l.offer.button}</SplitButton>
           </div>
         </div>
-      </div>
-
-      {/* ===== GROVE TO SHIPMENT ===== */}
-      <section className="journey-section section">
-        <div className="container">
-          <div className="section-header journey-header reveal">
-            <span className="eyebrow">{h.journey.eyebrow}</span>
-            <h2>{rich(h.journey.title)}</h2>
+        {/* Row 1: gap, bulk card, bulk photo, gap. Row 2: ORZETA card, bottles, private label photo, private label card.
+            The two photos load eagerly: they are the largest images on screen when the page is opened or
+            reloaded at this section (for example from the header's link to #sourcing). */}
+        <div className="ld-bento" data-rv-group>
+          <div className="ld-tile-empty" />
+          {offerCard(0)}
+          <div className="ld-tile ld-photo" data-rv>
+            <Image src={flexitank} alt={l.offer.photoAlts[0]} fill loading="eager" sizes="(max-width: 900px) 100vw, 25vw" data-parallax />
           </div>
-          <ol className="journey-steps">
-            {h.journey.steps.map((j, i) => (
-              <li key={j.step} className={`journey-step reveal reveal-delay-${Math.min(i + 1, 4)}`}>
-                <span className="journey-num">{String(i + 1).padStart(2, "0")}</span>
-                <span className="journey-fact">{j.fact}</span>
-                <h3>{j.step}</h3>
-                <p>{j.text}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="ld-tile-empty" />
+          {offerCard(1)}
+          <div className="ld-tile ld-bottles" data-rv>
+            <OrzetaBottles alts={{ sun: l.offer.photoAlts[1], grove: "", organic: "" }} />
+          </div>
+          <div className="ld-tile ld-photo" data-rv>
+            <Image src={privateLabel} alt={l.offer.photoAlts[2]} fill loading="eager" sizes="(max-width: 900px) 100vw, 25vw" />
+          </div>
+          {offerCard(2)}
         </div>
       </section>
 
-      {/* ===== SOLUTIONS ===== */}
-      <section className="section section-cream scroll-mt-[100px]" id="solutions">
-        <div className="container">
-          <div className="section-header centered reveal">
-            <span className="eyebrow-dark">{h.solutions.eyebrow}</span>
-            <h2>{h.solutions.title}</h2>
-            <p className="lead">{h.solutions.lead}</p>
-          </div>
-        </div>
-        <div className="container">
-          <div className="solution-feature-grid mt-15">
-            <Link href={href("/bulk-olive-oil")} className="solution-card solution-card-feature">
-              <div className="solution-card-bg">
-                <Image src={bulkHarvest} alt="" fill sizes="(max-width: 900px) 100vw, 60vw" className="object-cover" />
-              </div>
-              <div className="solution-card-content">
-                <span className="solution-card-tag">{h.solutions.bulk.tag}</span>
-                <h3>{h.solutions.bulk.title}</h3>
-                <p>{h.solutions.bulk.text}</p>
-                <div className="solution-region-tags">
-                  {h.solutions.bulk.tags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-                <span className="solution-card-link">
-                  {h.solutions.bulk.link} <ArrowSmall />
-                </span>
-              </div>
-            </Link>
-            <div className="solution-stack">
-              <Link href={href("/packaged-products")} className="solution-card solution-card-stack">
-                <div className="solution-card-bg solution-card-bottles">
-                  <OrzetaBottles />
-                </div>
-                <div className="solution-card-content">
-                  <span className="solution-card-tag">{h.solutions.packaged.tag}</span>
-                  <h3>{h.solutions.packaged.title}</h3>
-                  <p>{h.solutions.packaged.text}</p>
-                  <span className="solution-card-link">
-                    {h.solutions.packaged.link} <ArrowSmall />
-                  </span>
-                </div>
-              </Link>
+      {/* ===== 03 THE PROCESS ===== */}
+      <Process
+        steps={l.process.steps}
+        thumbs={processThumbs}
+        background={<Image src={qualityHero} alt="" fill sizes="100vw" />}
+        tag={
+          <Tag n={3} light>
+            {l.process.tag}
+          </Tag>
+        }
+      />
+
+      {/* ===== 04 THE ORZETA RANGE ===== */}
+      <section className="ld-section">
+        <RangeAccordion
+          rows={l.range.rows}
+          images={rangeImages}
+          tabs={l.range.tabs}
+          formats={l.range.formats}
+          useLabel={l.range.useLabel}
+          formatsLabel={l.range.formatsLabel}
+          heading={
+            <div>
+              <Tag n={4}>{l.range.tag}</Tag>
+              <Lines lines={l.range.title} soft />
             </div>
-          </div>
-          <p className="distributor-note reveal">
-            {h.solutions.distributorQuestion}{" "}
-            <Link href={href("/contact#become-distributor")} className="text-link">
-              {t.common.becomeDistributor}
-            </Link>
+          }
+          button={<SplitButton href={href("/packaged-products")}>{l.range.button}</SplitButton>}
+        />
+      </section>
+
+      {/* ===== 05 OUR ADVANTAGE ===== */}
+      <section className="ld-edge ld-photo">
+        <Image src={millennialTrees} alt="" fill sizes="100vw" data-parallax />
+        <div className="ld-edge-top" data-rv-group>
+          <Tag n={5} light>
+            {l.edge.tag}
+          </Tag>
+          <Lines lines={l.edge.title} />
+        </div>
+        <div className="ld-edge-cards" data-rv-group>
+          {l.edge.cards.map((card, i) => (
+            <div className="ld-glass" key={card.title} data-rv>
+              <i className="ld-icon ld-icon-lime">{edgeIcons[i]}</i>
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== 06 THE FIGURES ===== */}
+      <section className="ld-section">
+        <div data-rv-group>
+          <Tag n={6}>{l.figures.tag}</Tag>
+        </div>
+        <div className="ld-figures" data-rv-group>
+          {figures.map((f, i) => (
+            <div key={l.figures.labels[i]} data-rv>
+              <strong className="count-up" data-target={f.target} data-suffix={f.suffix}>
+                {formatNumber(f.target)}
+                {f.suffix}
+              </strong>
+              <span>{l.figures.labels[i]}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== 07 HELP ===== */}
+      <section className="ld-section ld-help">
+        <div className="ld-center" data-rv-group>
+          <Tag n={7}>{l.help.tag}</Tag>
+          <Lines lines={l.help.title} soft />
+        </div>
+        <Faq items={t.bulk.faq.items} />
+      </section>
+
+      {/* ===== 08 GET STARTED + QUOTE FORM ===== */}
+      <section className="ld-start ld-photo scroll-mt-[100px]" id="export-enquiry">
+        <Image src={heritage} alt="" fill sizes="100vw" data-parallax />
+        <div className="ld-start-panel" data-rv-group>
+          <Tag n={8} light>
+            {l.start.tag}
+          </Tag>
+          <Lines lines={[l.start.title]} />
+          <p className="ld-start-text" data-rv>
+            {l.start.text}
           </p>
-        </div>
-      </section>
-
-      {/* ===== EXPORT CAPABILITIES ===== */}
-      <section className="section section-cream export-section">
-        <div className="container">
-          <div className="export-layout">
-            <div className="reveal">
-              <span className="eyebrow-dark">{h.export.eyebrow}</span>
-              <h2>{h.export.title}</h2>
-              <p className="lead mt-4">{h.export.lead}</p>
-              <div className="mt-8">
-                <a href="#export-enquiry" className="btn btn-primary">
-                  {h.export.cta}
-                </a>
-              </div>
-            </div>
-            <div className="feature-list reveal reveal-delay-2">
-              {h.export.features.map((text, i) => {
-                const Icon = exportIcons[i];
-                return (
-                  <div className="feature-item" key={text}>
-                    <div className="feature-icon">
-                      <Icon />
-                    </div>
-                    <div className="feature-text">
-                      <p>{text}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div data-rv>
+            <EnquiryForm source="home" t={t.form} />
           </div>
         </div>
       </section>
-      {/* Export regions and the "40+ countries" figure come from the 2026 catalogue (see home.export.lead). */}
-
-      {/* ===== FINAL CTA + EXPORT ENQUIRY FORM ===== */}
-      <div className="cta-band scroll-mt-[100px]" id="export-enquiry">
-        <div className="container">
-          <div className="cta-form-layout">
-            <div className="reveal">
-              <h2>{h.cta.title}</h2>
-              <p>{h.cta.text}</p>
-            </div>
-            <div className="reveal reveal-delay-2">
-              <EnquiryForm source="home" t={t.form} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
