@@ -11,9 +11,9 @@ export const metadata: Metadata = { title: "Designs" };
 export default function DesignsPage() {
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-4xl">Your designs</h1>
-        <Link href="/studio/designs/new" className="btn">
+      <div className="studio-launch flex flex-wrap items-end justify-between gap-5 px-6 py-9 sm:px-10">
+        <h1 className="max-w-xl text-5xl sm:text-6xl">Your packaging projects</h1>
+        <Link href="/studio/designs/new" className="btn bg-paper text-ink">
           New design
         </Link>
       </div>
@@ -33,7 +33,7 @@ async function DesignList() {
   }
 
   return (
-    <ul className="grid gap-3">
+    <ul className="grid gap-3 md:grid-cols-2">
       {designs.map((design) => (
         <li key={design.id}>
           <Link href={`/studio/designs/${design.id}`} className="card flex flex-wrap items-center justify-between gap-3">

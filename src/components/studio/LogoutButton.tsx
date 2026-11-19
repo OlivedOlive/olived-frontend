@@ -13,7 +13,7 @@ export function LogoutButton() {
   }
 
   return (
-    <button type="button" onClick={logout} className="cursor-pointer text-sm text-mid underline">
+    <button type="button" onClick={logout} className="cursor-pointer text-sm underline">
       Log out
     </button>
   );

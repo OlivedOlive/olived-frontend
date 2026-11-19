@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "New design" };
 export default function NewDesignPage() {
   return (
     <div className="grid gap-6">
-      <h1 className="text-4xl">New design</h1>
+      <h1 className="text-5xl">New packaging project</h1>
       <Suspense fallback={<Loading label="Loading the catalog…" />}>
         <CatalogForm />
       </Suspense>

@@ -13,15 +13,28 @@ export type Template = {
   name: string;
   widthMm: string;
   heightMm: string;
+  zones?: { format?: string; caseCount?: number | null; geometry?: string };
 };
 
-export type Variant = { id: string; name: string; volumeMl: number; templates: Template[] };
-export type Product = { id: string; name: string; description: string | null; variants: Variant[] };
+export type Variant = { id: string; name: string; sku: string; volumeMl: number; templates: Template[] };
+export type Product = { id: string; slug: string; name: string; description: string | null; variants: Variant[] };
 export type Market = { id: string; code: string; name: string; languages: string[] };
 
 export type DesignContent = {
   fields: Record<string, string>;
   colors: { primary: string; secondary: string };
+  artwork?: Artwork;
+};
+
+export type PackagePart = "unit" | "retail" | "case";
+export type PanelFace = "front" | "back" | "left" | "right" | "top" | "bottom";
+export type Panel = { text: string; x: number; y: number; size: number };
+export type Artwork = {
+  font: "serif" | "sans" | "mono";
+  logo?: string;
+  logoPlacement?: { x: number; y: number; size: number };
+  labelFit?: { offset: number; height: number };
+  panels: Partial<Record<PackagePart, Partial<Record<PanelFace, Panel>>>>;
 };
 
 export type Issue = { field: string; message: string };
@@ -39,7 +52,7 @@ export type DesignSummary = {
 };
 
 export type DesignDetail = DesignSummary & {
-  market: Market & { ruleSets: { rules: { requiredFields: RequiredField[] } }[] };
+  market: Market & { ruleSets: { rules: { requiredFields: RequiredField[]; referenceOnly?: boolean; source?: string | null } }[] };
   versions: {
     id: string;
     number: number;

@@ -9,9 +9,9 @@ import type { Me } from "@/lib/studio/types";
 // logged in wait for the API. Each page puts its own data behind a Suspense boundary too.
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+    <div className="studio-shell min-h-screen">
+      <header className="studio-header">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <nav className="flex items-center gap-6 text-sm">
             <Link href="/studio/designs" className="font-display text-xl">
               OLIVED Studio
@@ -29,9 +29,9 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
       <KeepSession />
-    </>
+    </div>
   );
 }
 
@@ -39,11 +39,11 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
 // components below share a single /auth/me request.
 async function ReviewLink() {
   const me = await apiGet<Me>("/auth/me");
-  const isReviewer = me.role === "OLIVED_REVIEWER" || me.role === "OLIVED_ADMIN";
-  return isReviewer ? <Link href="/studio/review">Review</Link> : null;
+  if (me.role === "OLIVED_ADMIN") return <Link href="/studio/admin">Admin dashboard</Link>;
+  return me.role === "OLIVED_REVIEWER" ? <Link href="/studio/review">Review</Link> : null;
 }
 
 async function OrganizationName() {
   const me = await apiGet<Me>("/auth/me");
-  return <span className="text-sm text-mid">{me.organization.name}</span>;
+  return <span className="text-sm text-paper">{me.organization.name}</span>;
 }
