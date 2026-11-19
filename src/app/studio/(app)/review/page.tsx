@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LabelPreview } from "@/components/studio/LabelPreview";
+import { ReviewPreview } from "@/components/studio/PackagingPreview";
 import { Loading } from "@/components/studio/Loading";
 import { ReviewActions } from "@/components/studio/ReviewActions";
 import { apiGet } from "@/lib/studio/api";
@@ -25,7 +25,7 @@ async function ReviewQueue() {
   if (designs.length === 0) return <p className="text-mid">Nothing is waiting for review.</p>;
 
   return designs.map((design) => {
-    const content = design.versions[0]?.content;
+    const version = design.versions[0];
     return (
       <article key={design.id} className="card grid gap-6 md:grid-cols-2">
         <div className="grid content-start gap-4">
@@ -35,15 +35,10 @@ async function ReviewQueue() {
               {design.organization.name}, {design.template.name}, {design.market.name}
             </p>
           </div>
-          <ReviewActions designId={design.id} />
+          {version && <ReviewActions designId={design.id} versionId={version.id} />}
         </div>
-        {content && (
-          <LabelPreview
-            content={content}
-            requiredFields={design.market.ruleSets[0]?.rules.requiredFields ?? []}
-            widthMm={Number(design.template.widthMm)}
-            heightMm={Number(design.template.heightMm)}
-          />
+        {version && (
+          <ReviewPreview content={version.content} template={design.template} marketCode={design.market.code} />
         )}
       </article>
     );

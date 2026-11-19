@@ -7,6 +7,7 @@ import { getMe } from "@/lib/studio/api";
  * mistaken for a valid one. Render it inside <Suspense>.
  */
 export async function RedirectIfLoggedIn() {
-  if (await getMe()) redirect("/studio/designs");
+  const me = await getMe();
+  if (me) redirect(me.role === "OLIVED_ADMIN" ? "/studio/admin" : "/studio/designs");
   return null;
 }

@@ -32,7 +32,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setBusy(true);
     const result = await postJson(`/auth/${mode}`, Object.fromEntries(new FormData(event.currentTarget)));
     if (result.ok) {
-      router.push("/studio/designs");
+      router.push(isLogin ? "/studio" : "/studio/designs");
       router.refresh();
       return;
     }

@@ -10,17 +10,17 @@ export default function HomePage() {
       <Suspense>
         <RedirectIfLoggedIn />
       </Suspense>
-      <div className="grid content-center gap-6 px-4 py-16 sm:px-12 lg:px-16">
+      <div className="studio-header grid content-center gap-6 px-5 py-16 sm:px-12 lg:px-16">
         <p className="text-sm font-medium tracking-widest text-gold">OLIVED STUDIO</p>
-        <h1 className="text-5xl leading-tight">Your olive oil, your brand, ready for your market.</h1>
-        <p className="max-w-lg text-mid">
-          Choose a product, pick the country you sell in, and design packaging that follows that market&apos;s rules.
+        <h1 className="max-w-xl text-6xl leading-tight lg:text-7xl">Design your olive oil packaging.</h1>
+        <p className="max-w-lg text-paper">
+          Start with ORZETA, Oussoul, or your own brand. Build the label, retail box and shipping case for your destination market.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link href="/studio/register" className="btn">
+          <Link href="/studio/register" className="btn bg-paper text-ink">
             Create an account
           </Link>
-          <Link href="/studio/login" className="btn btn-outline">
+          <Link href="/studio/login" className="btn border border-paper bg-transparent">
             Log in
           </Link>
         </div>
