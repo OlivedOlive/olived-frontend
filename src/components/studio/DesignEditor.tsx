@@ -2,8 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AssetLibrary } from "@/components/studio/AssetLibrary";
+import { LabelEditor } from "@/components/studio/LabelEditor";
+import { MarketChecklist } from "@/components/studio/MarketChecklist";
 import { PackagingPreview, PARTS } from "@/components/studio/PackagingPreview";
-import { defaultPanel, getPackaging } from "@/lib/studio/label-artwork";
+import { defaultPanel, fillCopy, getPackaging } from "@/lib/studio/label-artwork";
+import { fitLayout } from "@/lib/studio/layout";
 import { postJson } from "@/lib/studio/post";
 import type { Artwork, DesignContent, DesignDetail, PackagePart, Panel, PanelFace } from "@/lib/studio/types";
 
@@ -27,12 +31,17 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   const [message, setMessage] = useState("");
   const [part, setPart] = useState<PackagePart>("unit");
   const [face, setFace] = useState<PanelFace>("front");
+  const [library, setLibrary] = useState(false);
 
   const rules = design.market.ruleSets[0]?.rules;
   const requiredFields = rules?.requiredFields ?? [];
-  const fields = [...requiredFields, ...OPTIONAL_FIELDS.filter((field) => !requiredFields.some(({ key }) => key === field.key))];
   const artwork = content.artwork ?? EMPTY_ARTWORK;
-  const { line, slug } = getPackaging(design.template);
+  const { line, slug, volume } = getPackaging(design.template);
+  const organic = slug.includes("organic");
+  const extraFields = [...OPTIONAL_FIELDS, ...(organic ? [{ key: "organicControl", label: "Organic control body and mark" }] : [])];
+  const fields = [...requiredFields, ...extraFields.filter((field) => !requiredFields.some(({ key }) => key === field.key))];
+  const templateCopy = fillCopy(rules?.copy ?? {}, volume);
+  const emptyWithTemplate = fields.filter(({ key }) => templateCopy[key] && !content.fields[key]?.trim());
   const logoPlacement = artwork.logoPlacement ?? { x: 50, y: 10, size: 70 };
   const labelFit = artwork.labelFit ?? { offset: 7, height: 84 };
   const panel = artwork.panels[part]?.[face] ?? defaultPanel(content, part, face);
@@ -50,6 +59,12 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   }, [checking, router]);
 
   function change(next: DesignContent) {
+    // Text frames on the label follow their wording, so a field edited in the form refits its block.
+    const unit = next.artwork?.layout?.unit;
+    if (unit) {
+      const fitted = fitLayout(unit, next);
+      if (fitted !== unit) next = { ...next, artwork: { ...next.artwork!, layout: { ...next.artwork!.layout, unit: fitted } } };
+    }
     setContent(next);
     setDirty(true);
     setMessage("");
@@ -60,26 +75,6 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
       ...artwork.panels,
       [part]: { ...artwork.panels[part], [face]: next },
     } } });
-  }
-
-  async function uploadLogo(file: File | undefined) {
-    if (!file) return;
-    if (file.size > 59000 || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setMessage("Choose a PNG, JPEG or WebP logo up to 59 kB.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
-      setContent((current) => ({
-        ...current,
-        artwork: { ...(current.artwork ?? EMPTY_ARTWORK), logo: String(reader.result) },
-      }));
-      setDirty(true);
-      setMessage("");
-    };
-    reader.onerror = () => setMessage("The logo could not be read.");
-    reader.readAsDataURL(file);
   }
 
   async function save() {
@@ -106,6 +101,28 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   }
 
   return (
+    <div className="grid gap-6">
+    <div className="card grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="studio-segment flex-wrap" aria-label="Packaging component">
+          {PARTS.map((item) => (
+            <button type="button" aria-pressed={part === item.id} key={item.id} onClick={() => { setPart(item.id); setFace("front"); }}>
+              {item.name}
+            </button>
+          ))}
+        </div>
+        {editable && (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-outline" disabled={busy || !dirty} onClick={() => run("save")}>{dirty ? "Save" : "Saved"}</button>
+          </div>
+        )}
+      </div>
+      {part === "unit" ? (
+        <LabelEditor content={content} template={design.template} line={line} editable={editable && !busy} fields={fields} onChange={change} />
+      ) : (
+        <p className="text-sm text-mid">The {PARTS.find((item) => item.id === part)?.name.toLowerCase()} is set up with the controls below and shown in the preview.</p>
+      )}
+    </div>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
       <div className="card grid content-start gap-4">
         <fieldset className="grid gap-3 rounded-xl border border-line bg-sand/50 p-4" disabled={!editable || busy}>
@@ -126,15 +143,9 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
             {issues.find((i) => i.field === "salesChannel")?.message && <span className="text-danger">{issues.find((i) => i.field === "salesChannel")?.message}</span>}
           </label>
         </fieldset>
-        <h2 className="text-2xl">Artwork controls</h2>
-        <div className="studio-segment flex-wrap" aria-label="Packaging component">
-          {PARTS.map((item) => (
-            <button type="button" aria-pressed={part === item.id} key={item.id} onClick={() => { setPart(item.id); setFace("front"); }}>
-              {item.name}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-2xl">{part === "unit" ? "Label settings" : "Artwork controls"}</h2>
         <fieldset className="grid gap-3" disabled={!editable || busy}>
+          {part !== "unit" && (<>
           <label className="field"><span className="capitalize">{face} artwork</span>
             <textarea className="input py-2" rows={4} maxLength={500} value={panel.text} onChange={(e) => changePanel({ ...panel, text: e.target.value })} />
           </label>
@@ -150,15 +161,14 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
               <option value="serif">Serif</option><option value="sans">Sans serif</option><option value="mono">Monospace</option>
             </select>
           </label>
-          <label className="field">Front-panel logo
-            <input type="file" accept="image/png,image/jpeg,image/webp" className="input py-2 text-sm"
-              onChange={(e) => { void uploadLogo(e.target.files?.[0]); e.target.value = ""; }} />
-          </label>
-          {artwork.logo && <button type="button" className="btn btn-outline justify-self-start" onClick={() => {
-            const remaining = { ...artwork };
-            delete remaining.logo;
-            change({ ...content, artwork: remaining });
-          }}>Remove uploaded logo</button>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-outline" onClick={() => setLibrary(true)}>{artwork.logo ? "Change logo" : "Choose a logo"}</button>
+            {artwork.logo && <button type="button" className="btn btn-outline" onClick={() => {
+              const remaining = { ...artwork };
+              delete remaining.logo;
+              change({ ...content, artwork: remaining });
+            }}>Remove logo</button>}
+          </div>
           {(artwork.logo || line || slug === "oussoul" || content.fields.brandName === "Oussoul") && (
             <details>
               <summary className="cursor-pointer text-sm font-medium">Logo position and scale</summary>
@@ -174,6 +184,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
               </div>
             </details>
           )}
+          </>)}
           {part === "unit" && design.template.kind === "BOTTLE_LABEL" && (
             <details>
               <summary className="cursor-pointer text-sm font-medium">Label fit in 3D</summary>
@@ -190,26 +201,48 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
             </details>
           )}
         </fieldset>
+        {library && <AssetLibrary onClose={() => setLibrary(false)} onPick={(url) => {
+          change({ ...content, artwork: { ...artwork, logo: url } });
+          setLibrary(false);
+        }} />}
         <details className="grid gap-3" open>
           <summary className="mb-3 cursor-pointer font-medium">Market checklist · {design.market.name}</summary>
           <div className="grid gap-3">
-        {rules?.referenceOnly && (
-          <p className="text-sm text-mid">Checks field completeness. Regulatory and printer approval are required for production.</p>
+        {rules?.draft && (
+          <p role="note" className="rounded-xl border border-gold/40 bg-sand p-3 text-sm">
+            <strong>Draft market.</strong> This template comes from label photos and has not been verified yet. Confirm every statement with your importer before printing.
+          </p>
         )}
-        {rules?.source && <a href={rules.source} target="_blank" rel="noreferrer" className="text-sm underline">Market reference</a>}
+        {editable && <MarketChecklist designId={design.id} content={content} />}
+        <p className="text-sm text-mid">
+          The checks guide compliance with {design.market.name}&apos;s labelling rules. OLIVED reviews every design, and the destination&apos;s regulatory sign-off is still required before printing.
+          {rules?.source && <> <a href={rules.source} target="_blank" rel="noreferrer" className="underline">Official source</a>.</>}
+        </p>
+        {editable && emptyWithTemplate.length > 0 && (
+          <button type="button" className="btn btn-outline justify-self-start" disabled={busy} onClick={() => change({
+            ...content,
+            fields: { ...content.fields, ...Object.fromEntries(emptyWithTemplate.map(({ key }) => [key, templateCopy[key]])) },
+          })}>
+            Fill {emptyWithTemplate.length} empty field{emptyWithTemplate.length > 1 ? "s" : ""} with the {design.market.name} wording
+          </button>
+        )}
         {fields.map(({ key, label }) => {
           const issue = issues.find((i) => i.field === key);
+          const value = content.fields[key] ?? "";
           return (
             <label key={key} className="field">
               {label}
-              <input
-                className="input"
-                value={content.fields[key] ?? ""}
+              <textarea
+                id={`field-${key}`}
+                className="input py-2"
+                rows={Math.min(10, Math.max(1, value.split("\n").length, Math.ceil(value.length / 48)))}
+                value={value}
                 disabled={!editable || busy}
                 maxLength={2000}
+                placeholder={templateCopy[key]}
                 onChange={(e) => change({ ...content, fields: { ...content.fields, [key]: e.target.value } })}
               />
-              {issue && <span className="font-normal text-danger">{issue.message}</span>}
+              {issue && <span className={`font-normal ${issue.severity === "warning" ? "text-gold" : "text-danger"}`}>{issue.message}</span>}
             </label>
           );
         })}
@@ -219,7 +252,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
         <div className="grid grid-cols-2 gap-4">
           {(["primary", "secondary"] as const).map((key) => (
             <label key={key} className="field capitalize">
-              {key} colour
+              {key === "primary" ? "Background colour" : "Accent colour"}
               <input
                 type="color"
                 className="input cursor-pointer p-1"
@@ -277,8 +310,11 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
           face={face}
           onFace={setFace}
           marketCode={design.market.code}
+          initialView={part === "unit" ? "3d" : "flat"}
+          key={part === "unit" ? "unit" : "other"}
         />
       </div>
+    </div>
     </div>
   );
 }

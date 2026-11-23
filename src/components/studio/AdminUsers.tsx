@@ -1,4 +1,5 @@
 import { AdminDeleteAction } from "@/components/studio/AdminDeleteAction";
+import { ShowMore, shownCount } from "@/components/studio/ShowMore";
 import { StatusBadge } from "@/components/studio/StatusBadge";
 import { apiGet } from "@/lib/studio/api";
 import type { DesignStatus, Role } from "@/lib/studio/types";
@@ -12,12 +13,19 @@ type AdminUser = {
   _count: { designsCreated: number; versions: number; approvals: number };
 };
 
-export async function AdminUsers() {
-  const { users } = await apiGet<{ users: AdminUser[] }>("/admin/users");
+type Query = Record<string, string | string[] | undefined>;
+
+/** The newest users first, a page at a time (`?users=24`). */
+export async function AdminUsers({ searchParams }: { searchParams: Promise<Query> }) {
+  const query = await searchParams;
+  const { users, total } = await apiGet<{ users: AdminUser[]; total: number }>(
+    `/admin/users?take=${shownCount(query, "users", 20)}`,
+  );
   return (
-    <section id="users" className="grid gap-3">
-      <h2 className="text-3xl">Users <span className="text-sm text-mid">({users.length})</span></h2>
+    <section id="users" className="grid scroll-mt-24 gap-3">
+      <h2 className="text-3xl">Users <span className="text-sm text-mid">({total})</span></h2>
       {users.map((user) => <UserCard key={user.id} user={user} />)}
+      <ShowMore query={query} param="users" shown={users.length} total={total} anchor="users" />
     </section>
   );
 }

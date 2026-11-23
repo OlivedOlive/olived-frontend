@@ -5,15 +5,25 @@ import { AdminUsers } from "@/components/studio/AdminUsers";
 import { ReviewPreview } from "@/components/studio/PackagingPreview";
 import { Loading } from "@/components/studio/Loading";
 import { ReviewActions } from "@/components/studio/ReviewActions";
+import { PAGE_MAX, ShowMore, shownCount } from "@/components/studio/ShowMore";
 import { StatusBadge } from "@/components/studio/StatusBadge";
 import { ValidateDesignButton } from "@/components/studio/ValidateDesignButton";
 import { apiGet } from "@/lib/studio/api";
-import type { ReviewDesign } from "@/lib/studio/types";
+import type { DesignStatus, ReviewDesign } from "@/lib/studio/types";
 
 type AdminDesign = ReviewDesign & { createdBy: { name: string; email: string } };
+type Query = Awaited<PageProps<"/studio/admin">["searchParams"]>;
+type DesignPage = { designs: AdminDesign[]; total: number };
+
+/** The lists that grow over time, each with its own "Show more" (`?approved=24`). */
+const PAGED_GROUPS: { title: string; status: DesignStatus; param: string; empty: string }[] = [
+  { title: "Changes requested", status: "CHANGES_REQUESTED", param: "changes", empty: "No designs." },
+  { title: "Approved", status: "APPROVED", param: "approved", empty: "No designs." },
+  { title: "Drafts", status: "DRAFT", param: "drafts", empty: "No designs." },
+];
 export const metadata: Metadata = { title: "Admin dashboard" };
 
-export default function AdminPage() {
+export default function AdminPage({ searchParams }: PageProps<"/studio/admin">) {
   return (
     <div className="grid gap-6">
       <h1 className="text-4xl">Admin dashboard</h1>
@@ -22,36 +32,64 @@ export default function AdminPage() {
         <a href="#design-requests" className="underline">Design requests</a>
       </nav>
       <Suspense fallback={<Loading label="Loading users…" />}>
-        <AdminUsers />
+        <AdminUsers searchParams={searchParams} />
       </Suspense>
       <h2 id="design-requests" className="text-3xl">Design requests</h2>
       <Suspense fallback={<Loading label="Loading client designs…" />}>
-        <Dashboard />
+        <Dashboard searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Dashboard() {
-  const { designs } = await apiGet<{ designs: AdminDesign[] }>("/admin/designs");
-  const waiting = designs.filter((design) => design.status === "SUBMITTED");
-  const groups = [
-    { title: "Ready for review", designs: waiting.filter((design) => design.versions[0]?.validationResults[0]?.passed) },
-    { title: "Awaiting validation", designs: waiting.filter((design) => !design.versions[0]?.validationResults[0]?.passed) },
-    { title: "Changes requested", designs: designs.filter((design) => design.status === "CHANGES_REQUESTED") },
-    { title: "Approved", designs: designs.filter((design) => design.status === "APPROVED") },
-    { title: "Drafts", designs: designs.filter((design) => design.status === "DRAFT") },
-  ];
+/**
+ * Submitted designs are the work queue, so they come in one request (up to the server's limit) and
+ * split by their check result. The other lists load a page at a time.
+ */
+async function Dashboard({ searchParams }: { searchParams: Promise<Query> }) {
+  const query = await searchParams;
+  const [submitted, ...paged] = await Promise.all([
+    apiGet<DesignPage>(`/admin/designs?status=SUBMITTED&take=${PAGE_MAX}`),
+    ...PAGED_GROUPS.map((group) =>
+      apiGet<DesignPage>(`/admin/designs?status=${group.status}&take=${shownCount(query, group.param)}`),
+    ),
+  ]);
+  const passed = (design: AdminDesign) => design.versions[0]?.validationResults[0]?.passed;
 
-  return groups.map((group) => (
-    <section key={group.title} className="grid gap-4">
-      <h2 className="text-2xl">{group.title} <span className="text-sm text-mid">({group.designs.length})</span></h2>
-      {group.designs.length === 0 && <p className="text-sm text-mid">
-        {group.title === "Ready for review" ? "Submitted designs appear here after passing validation." : "No designs."}
-      </p>}
-      {group.designs.map((design) => <DesignCard key={design.id} design={design} />)}
+  return (
+    <>
+      <DesignGroup title="Ready for review" id="ready" designs={submitted.designs.filter(passed)}
+        empty="Submitted designs appear here after passing validation." />
+      <DesignGroup title="Awaiting validation" id="awaiting" designs={submitted.designs.filter((d) => !passed(d))} empty="No designs." />
+      {submitted.total > submitted.designs.length && (
+        <p className="text-sm text-mid">Showing the latest {submitted.designs.length} of {submitted.total} submitted designs.</p>
+      )}
+      {PAGED_GROUPS.map((group, i) => (
+        <DesignGroup key={group.status} title={group.title} id={group.param} designs={paged[i].designs}
+          total={paged[i].total} empty={group.empty}>
+          <ShowMore query={query} param={group.param} shown={paged[i].designs.length} total={paged[i].total} anchor={group.param} />
+        </DesignGroup>
+      ))}
+    </>
+  );
+}
+
+function DesignGroup({ title, id, designs, total = designs.length, empty, children }: {
+  title: string;
+  id: string;
+  designs: AdminDesign[];
+  total?: number;
+  empty: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="grid scroll-mt-24 gap-4">
+      <h2 className="text-2xl">{title} <span className="text-sm text-mid">({total})</span></h2>
+      {designs.length === 0 && <p className="text-sm text-mid">{empty}</p>}
+      {designs.map((design) => <DesignCard key={design.id} design={design} />)}
+      {children}
     </section>
-  ));
+  );
 }
 
 function DesignCard({ design }: { design: AdminDesign }) {

@@ -7,6 +7,8 @@ import sun from "@/assets/images/orzeta-sun.webp";
 import grove from "@/assets/images/orzeta-grove.webp";
 import organic from "@/assets/images/orzeta-organic.webp";
 import oussoul from "@/assets/images/studio/oussoul.webp";
+import { glassModelFor } from "@/lib/studio/bottle-models";
+import { labelSize, layoutOf, renderWrapFaces } from "@/lib/studio/layout";
 import { drawLabel, FACES, getArtworkLogo, getLabelReference, getPackaging, loadArtworkLogo, LABEL_SIZE, WRAP_PANEL_WIDTH } from "@/lib/studio/label-artwork";
 import type { DesignContent, PackagePart, PanelFace } from "@/lib/studio/types";
 
@@ -83,17 +85,27 @@ export function PackagingPreview({
   const photo = part === "unit" && Object.hasOwn(PHOTOS, photoKey) ? PHOTOS[photoKey as keyof typeof PHOTOS] : null;
   const activeView = (view === "reference" && !ref) || (view === "photo" && !photo) ? "flat" : view;
   const matchingReference = ref?.exact && format.startsWith("Marasca") && volume === 750;
-  const hasDetailedModel = part === "unit" && ["sun", "grove", "organic"].includes(line) &&
-    format.startsWith("Marasca") && [250, 500, 750, 1000].includes(volume);
-  const hasOriginalArtwork = hasDetailedModel && line === "sun" && volume === 1000;
+  // Marasca and Dorica glass are shown on the supplier-size models. The photo-based Sun bottle is
+  // kept only to show the printed ORZETA Sun label on the 1 L Marasca.
+  const glass = part === "unit" ? glassModelFor(format) : null;
+  const hasOriginalArtwork = part === "unit" && line === "sun" && format.startsWith("Marasca") && volume === 1000;
+  const showReference = hasOriginalArtwork && showOriginal;
+  const modelKey = showReference ? "reference" : glass ? glass.url : "procedural";
 
+  // The unit label's wrap is drawn from its element layout, exactly as in the editor. Designs that still
+  // carry text panels from before the editor keep them until they are arranged in the editor.
+  const legacyPanels = !content.artwork?.layout?.unit && Object.keys(content.artwork?.panels?.unit ?? {}).length > 0;
   useEffect(() => {
     let current = true;
-    void loadArtworkLogo(logo).then((image) => {
-      if (current) setArtwork(Object.fromEntries(FACES.map((side) => [side, drawLabel(content, part, side, image, line)])));
-    });
-    return () => { current = false; };
-  }, [content, part, line, logo]);
+    const timer = setTimeout(() => {
+      void loadArtworkLogo(logo).then(async (image) => {
+        const faces: ArtworkCanvases = Object.fromEntries(FACES.map((side) => [side, drawLabel(content, part, side, image, line)]));
+        if (part === "unit" && !legacyPanels) Object.assign(faces, await renderWrapFaces(content, layoutOf(content, template, line), labelSize(template)));
+        if (current) setArtwork(faces);
+      });
+    }, 120);
+    return () => { current = false; clearTimeout(timer); };
+  }, [content, part, line, logo, template, legacyPanels]);
 
   return (
     <section className="studio-preview card grid gap-4">
@@ -111,10 +123,10 @@ export function PackagingPreview({
           <FlatArtwork sources={artwork} faces={part === "unit" && WRAP.includes(face) ? WRAP : [face]} />
         )}
         {activeView === "3d" && (
-          <ModelPreviewBoundary key={hasDetailedModel ? "marasca" : "procedural"} onShowArtwork={() => setView("flat")}>
+          <ModelPreviewBoundary key={modelKey} onShowArtwork={() => setView("flat")}>
           <BottleScene format={format} volume={volume} part={part} artwork={artwork}
             offset={content.artwork?.labelFit?.offset ?? 7} labelHeight={content.artwork?.labelFit?.height ?? 84}
-            yaw={yaw} pitch={pitch} zoom={zoom} referenceModel={hasDetailedModel} useOriginalArtwork={hasOriginalArtwork && showOriginal}
+            yaw={yaw} pitch={pitch} zoom={zoom} referenceModel={showReference} useOriginalArtwork={showReference}
             onRotate={(horizontal, vertical) => { setYaw(horizontal); setPitch(vertical); }} />
           </ModelPreviewBoundary>
         )}
@@ -144,7 +156,7 @@ export function PackagingPreview({
           )}
           <label className="field">Horizontal rotation <input type="range" min="-180" max="180" value={yaw} onChange={(e) => setYaw(Number(e.target.value))} /></label>
           <label className="field">Vertical rotation <input type="range" min="-90" max="90" value={pitch} onChange={(e) => setPitch(Number(e.target.value))} /></label>
-          {hasDetailedModel && (
+          {(glass || showReference) && (
             <div className="studio-segment flex-wrap sm:col-span-2" aria-label="Camera positions">
               {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
                 <button key={angle} type="button" onClick={() => { setYaw(angle <= 180 ? -angle : 360 - angle); setPitch(0); }}>{angle}°</button>
@@ -172,7 +184,11 @@ export function PackagingPreview({
             : `Brand reference${ref.market ? " · " + ref.market : ""}. A matching production label for this market and format requires approval.`
           : activeView === "photo"
             ? "Original brand photography. The format and volume pictured may differ from the selected packaging."
-            : "Concept proof. Supplier drawings and a printed sample are needed to confirm dimensions and fit."}
+            : activeView === "3d" && glass && !showReference
+              ? volume === glass.volume
+                ? `Supplier-size ${glass.name} ${volume} mL model. A printed sample confirms the label fit.`
+                : `Shown on the ${glass.name} ${glass.volume} mL model, scaled to ${volume} mL. Supplier drawings for this size confirm its exact shape.`
+              : "Concept proof. Supplier drawings and a printed sample are needed to confirm dimensions and fit."}
         {part === "case" && template.zones?.caseCount ? ` Catalog pack count: ${template.zones.caseCount}.` : ""}
       </p>
     </section>

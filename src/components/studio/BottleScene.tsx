@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { glassModelFor } from "@/lib/studio/bottle-models";
 import { FACES, LABEL_SIZE } from "@/lib/studio/label-artwork";
 import type { PackagePart, PanelFace } from "@/lib/studio/types";
 
@@ -93,6 +94,165 @@ function profileSurface(rings: number[][], depth: number, exponent: number) {
     normals.setXYZ(last, seam.x, seam.y, seam.z);
   });
   return mesh;
+}
+
+/** Scene units per metre: the supplier models are in metres, the camera is framed for about 3 units. */
+const UNITS_PER_METRE = 10;
+/** The label sits this far off the glass, so it never flickers into the surface. */
+const LABEL_GAP = .0004;
+
+type GlassBody =
+  | { shape: "round"; radius: number; bottom: number; top: number; height: number }
+  | { shape: "square"; half: number; corner: number; bottom: number; top: number; height: number };
+
+/** Each model file is downloaded once; every preview parses its own copy, so disposing one never breaks another. */
+const glassFiles = new Map<string, Promise<ArrayBuffer>>();
+
+async function loadGlass(url: string) {
+  let file = glassFiles.get(url);
+  if (!file) {
+    file = fetch(url).then((response) => {
+      if (!response.ok) throw new Error(`${url} answered ${response.status}`);
+      return response.arrayBuffer();
+    });
+    glassFiles.set(url, file);
+    file.catch(() => glassFiles.delete(url));
+  }
+  const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+  const { scene } = await new GLTFLoader().parseAsync((await file).slice(0), "");
+  return scene;
+}
+
+/**
+ * Measures the glass body of a supplier model: round or square, its size, and the straight part of
+ * the wall where a label can sit. Read from the mesh itself, so a corrected model needs no code change.
+ */
+function measureGlass(scene: THREE.Group): GlassBody {
+  scene.updateMatrixWorld(true);
+  let body: THREE.Mesh | null = null;
+  let most = 0;
+  scene.traverse((item) => {
+    if (!(item instanceof THREE.Mesh)) return;
+    const name = [item.material].flat().map((material) => material.name).join(" ");
+    const count = item.geometry.getAttribute("position").count;
+    if (/glass/i.test(name) && count > most) {
+      body = item;
+      most = count;
+    }
+  });
+  const points: THREE.Vector3[] = [];
+  const height = new THREE.Box3().setFromObject(scene).max.y;
+  const mesh = body as THREE.Mesh | null;
+  if (mesh) {
+    const position = mesh.geometry.getAttribute("position");
+    for (let index = 0; index < position.count; index++) {
+      points.push(new THREE.Vector3().fromBufferAttribute(position, index).applyMatrix4(mesh.matrixWorld));
+    }
+  }
+  const extent = (point: THREE.Vector3) => Math.max(Math.abs(point.x), Math.abs(point.z));
+  const half = Math.max(...points.map(extent));
+  // The straight wall: everything within 0.6 mm of the widest point, less 4 mm of margin at each end.
+  const wall = points.filter((point) => extent(point) > half - .0006);
+  const bottom = Math.min(...wall.map((point) => point.y)) + .004;
+  const top = Math.max(...wall.map((point) => point.y)) - .004;
+  const radius = Math.max(...points.filter((point) => point.y >= bottom && point.y <= top).map((point) => Math.hypot(point.x, point.z)));
+  // A round body reaches the same distance in every direction; a square one reaches further at its corners.
+  if (radius < half * 1.12) return { shape: "round", radius: half, bottom, top, height };
+  const corner = THREE.MathUtils.clamp((half * Math.SQRT2 - radius) / (Math.SQRT2 - 1), .001, half);
+  return { shape: "square", half, corner, bottom, top, height };
+}
+
+/** The outline of the label around the body, starting at the front-left corner and running front, right, back, left. */
+function glassOutline(body: GlassBody, gap: number) {
+  const points: [number, number][] = [];
+  if (body.shape === "round") {
+    const radius = body.radius + gap;
+    for (let n = 0; n <= 128; n++) {
+      const angle = n / 128 * Math.PI * 2 - Math.PI / 4;
+      points.push([Math.sin(angle) * radius, Math.cos(angle) * radius]);
+    }
+    return points;
+  }
+  const half = body.half + gap;
+  const corner = body.corner + gap;
+  const flat = half - corner;
+  const arc = (x: number, z: number, from: number, to: number) => {
+    for (let n = 0; n <= 12; n++) {
+      const angle = from + (to - from) * n / 12;
+      points.push([x + Math.sin(angle) * corner, z + Math.cos(angle) * corner]);
+    }
+  };
+  const side = (x0: number, z0: number, x1: number, z1: number) => {
+    for (let n = 1; n < 16; n++) points.push([x0 + (x1 - x0) * n / 16, z0 + (z1 - z0) * n / 16]);
+  };
+  const q = Math.PI / 2;
+  arc(-flat, flat, -q / 2, 0);
+  side(-flat, half, flat, half);
+  arc(flat, flat, 0, q);
+  side(half, flat, half, -flat);
+  arc(flat, -flat, q, 2 * q);
+  side(flat, -half, -flat, -half);
+  arc(-flat, -flat, 2 * q, 3 * q);
+  side(-half, -flat, -half, flat);
+  arc(-flat, flat, 3 * q, 3.5 * q);
+  return points;
+}
+
+/** A label band around the glass between two heights, with the artwork mapped by arc length. */
+function labelBand(outline: [number, number][], lower: number, upper: number) {
+  const lengths = [0];
+  outline.slice(1).forEach(([x, z], n) => lengths.push(lengths[n] + Math.hypot(x - outline[n][0], z - outline[n][1])));
+  const total = lengths[lengths.length - 1];
+  const vertices: number[] = [];
+  const uv: number[] = [];
+  const indices: number[] = [];
+  outline.forEach(([x, z], n) => {
+    vertices.push(x, lower, z, x, upper, z);
+    uv.push(lengths[n] / total, 0, lengths[n] / total, 1);
+    if (n) {
+      const a = (n - 1) * 2;
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return { geometry, perimeter: total };
+}
+
+/**
+ * Lays the four label faces side by side (front, right, back, left), each sized to its share of the
+ * band so the artwork keeps its proportions, with a light print shading.
+ */
+function paintWrap(artwork: Properties["artwork"], labelHeight: number, faceWidth: (face: PanelFace) => number) {
+  const wrap = document.createElement("canvas");
+  wrap.width = LABEL_SIZE * BAND_ORDER.length;
+  wrap.height = LABEL_SIZE;
+  const ctx = wrap.getContext("2d");
+  BAND_ORDER.forEach((face, index) => {
+    const panel = artwork[face];
+    if (!panel || !ctx) return;
+    const pixel = panel.getContext("2d")?.getImageData(0, 0, 1, 1).data;
+    if (pixel) {
+      ctx.fillStyle = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+      ctx.fillRect(LABEL_SIZE * index, 0, LABEL_SIZE, LABEL_SIZE);
+    }
+    const minimum = face === "front" ? .94 : .63;
+    const width = Math.min(LABEL_SIZE, Math.max(LABEL_SIZE * minimum, Math.round(panel.width * labelHeight / faceWidth(face))));
+    ctx.drawImage(panel, LABEL_SIZE * index + (LABEL_SIZE - width) / 2, 0, width, LABEL_SIZE);
+    const left = LABEL_SIZE * index;
+    const shading = ctx.createLinearGradient(left, 0, left + LABEL_SIZE, 0);
+    shading.addColorStop(0, "rgba(25,20,12,.14)");
+    shading.addColorStop(.17, "rgba(255,249,230,.09)");
+    shading.addColorStop(.34, "rgba(255,249,230,0)");
+    shading.addColorStop(.72, "rgba(25,20,12,0)");
+    shading.addColorStop(1, "rgba(25,20,12,.14)");
+    ctx.fillStyle = shading;
+    ctx.fillRect(left, 0, LABEL_SIZE, LABEL_SIZE);
+  });
+  return wrap;
 }
 
 function contactShadow() {
@@ -207,35 +367,11 @@ function createModel(model: THREE.Group, { format, volume, part, artwork, offset
     model.add(handle);
   }
 
-  const wrap = document.createElement("canvas");
-  wrap.width = LABEL_SIZE * BAND_ORDER.length;
-  wrap.height = LABEL_SIZE;
-  const ctx = wrap.getContext("2d");
   const labelZone = bodyHeight - (tin ? .18 : .48);
   const upper = top - (tin ? .08 : .40) - labelZone * offset / 100;
   const lower = Math.max(base + .11, upper - labelZone * labelHeight / 100);
-  BAND_ORDER.forEach((face, index) => {
-    const panel = artwork[face];
-    if (!panel || !ctx) return;
-    const pixel = panel.getContext("2d")?.getImageData(0, 0, 1, 1).data;
-    if (pixel) {
-      ctx.fillStyle = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-      ctx.fillRect(LABEL_SIZE * index, 0, LABEL_SIZE, LABEL_SIZE);
-    }
-    const faceWidth = bodyRadius * (dorica ? Math.PI / 2 : 2) * (face === "front" || face === "back" ? 1 : depth);
-    const minimum = face === "front" ? .94 : .63;
-    const width = Math.min(LABEL_SIZE, Math.max(LABEL_SIZE * minimum, Math.round(panel.width * (upper - lower) / faceWidth)));
-    ctx.drawImage(panel, LABEL_SIZE * index + (LABEL_SIZE - width) / 2, 0, width, LABEL_SIZE);
-    const left = LABEL_SIZE * index;
-    const shading = ctx.createLinearGradient(left, 0, left + LABEL_SIZE, 0);
-    shading.addColorStop(0, "rgba(25,20,12,.14)");
-    shading.addColorStop(.17, "rgba(255,249,230,.09)");
-    shading.addColorStop(.34, "rgba(255,249,230,0)");
-    shading.addColorStop(.72, "rgba(25,20,12,0)");
-    shading.addColorStop(1, "rgba(25,20,12,.14)");
-    ctx.fillStyle = shading;
-    ctx.fillRect(left, 0, LABEL_SIZE, LABEL_SIZE);
-  });
+  const wrap = paintWrap(artwork, upper - lower, (face) =>
+    bodyRadius * (dorica ? Math.PI / 2 : 2) * (face === "front" || face === "back" ? 1 : depth));
   model.add(new THREE.Mesh(profileSurface([[bodyRadius + .008, lower], [bodyRadius + .008, upper]], depth, square), new THREE.MeshBasicMaterial({
     map: createTexture(wrap),
     color: "#ffffff",
@@ -255,6 +391,14 @@ export function BottleScene(props: Properties) {
   const referenceBottle = useRef<THREE.Group | null>(null);
   const [referenceReady, setReferenceReady] = useState(false);
   const { artwork, format, volume, part, offset, labelHeight, yaw, pitch, zoom, referenceModel, useOriginalArtwork } = props;
+  // Marasca and Dorica glass use the supplier-size models; PET, tin and the boxes stay procedural.
+  const glass = part === "unit" && !referenceModel ? glassModelFor(format) : null;
+  const glassUrl = glass?.url;
+  const glassVolume = glass?.volume ?? 0;
+  const [glassFailed, setGlassFailed] = useState<string | null>(null);
+  const [glassReady, setGlassReady] = useState<string | null>(null);
+  const glassScene = useRef<{ scene: THREE.Group; body: GlassBody; band: THREE.Group | null } | null>(null);
+  const usingGlass = Boolean(glassUrl) && glassFailed !== glassUrl;
 
   useEffect(() => {
     const container = host.current;
@@ -402,14 +546,81 @@ export function BottleScene(props: Properties) {
 
   useEffect(() => {
     const view = instance.current;
-    if (!view || (referenceModel && !referenceFailed) || !FACES.every((side) => artwork[side])) return;
+    if (!view || (referenceModel && !referenceFailed) || usingGlass || !FACES.every((side) => artwork[side])) return;
     createModel(view.model, { format, volume, part, artwork, offset, labelHeight });
     const bounds = new THREE.Box3().setFromObject(view.model);
     view.shadow.position.y = bounds.min.y - .018;
     const size = bounds.getSize(new THREE.Vector3());
     view.shadow.scale.set(Math.max(.65, size.x * .77), Math.max(.65, size.z * .82), 1);
     view.renderer.render(view.scene, view.camera);
-  }, [artwork, format, volume, part, offset, labelHeight, referenceModel, referenceFailed]);
+  }, [artwork, format, volume, part, offset, labelHeight, referenceModel, referenceFailed, usingGlass]);
+
+  // Load the supplier model for this format.
+  useEffect(() => {
+    const view = instance.current;
+    if (!view || !glassUrl || !usingGlass) return;
+    let cancelled = false;
+    void loadGlass(glassUrl).then((scene) => {
+      if (cancelled) {
+        disposeModel(scene);
+        return;
+      }
+      disposeModel(view.model);
+      glassScene.current = { scene, body: measureGlass(scene), band: null };
+      view.model.add(scene);
+      setGlassReady(glassUrl);
+    }).catch(() => { if (!cancelled) setGlassFailed(glassUrl); });
+    return () => {
+      cancelled = true;
+      const loaded = glassScene.current;
+      if (loaded) {
+        view.model.remove(loaded.scene);
+        disposeModel(loaded.scene);
+        glassScene.current = null;
+      }
+      setGlassReady(null);
+    };
+  }, [glassUrl, usingGlass]);
+
+  // Size it for the selected volume, standing on the shadow.
+  useEffect(() => {
+    const view = instance.current;
+    const loaded = glassScene.current;
+    if (!view || !loaded || glassReady !== glassUrl) return;
+    const scale = Math.cbrt(volume / glassVolume) * UNITS_PER_METRE;
+    loaded.scene.scale.setScalar(scale);
+    loaded.scene.position.y = -loaded.body.height * scale / 2;
+    view.shadow.position.y = loaded.scene.position.y - .018;
+    const width = (loaded.body.shape === "round" ? loaded.body.radius : loaded.body.half) * 2 * scale;
+    view.shadow.scale.set(Math.max(.65, width * .9), Math.max(.65, width * .9), 1);
+    view.renderer.render(view.scene, view.camera);
+  }, [glassReady, glassUrl, glassVolume, volume]);
+
+  // Wrap the client's label on the real body, inside the straight part of the wall.
+  useEffect(() => {
+    const view = instance.current;
+    const loaded = glassScene.current;
+    if (!view || !loaded || glassReady !== glassUrl || !FACES.every((side) => artwork[side])) return;
+    const { body } = loaded;
+    const zone = body.top - body.bottom;
+    const upper = body.top - zone * offset / 100;
+    const lower = Math.max(body.bottom, upper - zone * labelHeight / 100);
+    const { geometry, perimeter } = labelBand(glassOutline(body, LABEL_GAP), lower, upper);
+    const texture = createTexture(paintWrap(artwork, upper - lower, () => perimeter / BAND_ORDER.length));
+    const band = new THREE.Group();
+    band.add(
+      new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })),
+      // The inside of the label, seen through the glass: plain paper, not mirrored artwork.
+      new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: "#efe9dc", roughness: .9, side: THREE.BackSide })),
+    );
+    if (loaded.band) {
+      loaded.scene.remove(loaded.band);
+      disposeModel(loaded.band);
+    }
+    loaded.band = band;
+    loaded.scene.add(band);
+    view.renderer.render(view.scene, view.camera);
+  }, [artwork, glassReady, glassUrl, offset, labelHeight]);
 
   useEffect(() => {
     const view = instance.current;
