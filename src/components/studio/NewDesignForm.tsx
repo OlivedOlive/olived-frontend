@@ -7,7 +7,7 @@ import orzeta from "@/assets/images/orzeta-grove.webp";
 import oussoul from "@/assets/images/studio/oussoul.webp";
 import privateLabel from "@/assets/images/private-label.png";
 import { PackagingPreview } from "@/components/studio/PackagingPreview";
-import { getStarterCopy } from "@/lib/studio/label-artwork";
+import { fillCopy } from "@/lib/studio/label-artwork";
 import { postJson } from "@/lib/studio/post";
 import type { DesignContent, Market, PanelFace, Product } from "@/lib/studio/types";
 
@@ -41,12 +41,14 @@ export function NewDesignForm({ products, markets }: { products: Product[]; mark
   const variant = variants.find((item) => item.id === variantId) ?? variants[0];
   const market = markets.find((item) => item.id === marketId);
   const template = variant?.templates.find((item) => item.id === packagingId) ?? variant?.templates[0];
-  const netQuantity = !variant ? "" : variant.volumeMl < 1000 ? variant.volumeMl + " mL" : variant.volumeMl / 1000 + " L";
+  // The design starts with the market's legal wording, sized for this bottle. Organic-only lines are left
+  // out for other oils, and private-label clients start without a brand name.
+  const marketCopy = fillCopy(market?.copy ?? {}, variant?.volumeMl ?? 750);
+  if (!product?.slug.includes("organic")) delete marketCopy.organicControl;
   const content: DesignContent = {
     fields: {
+      ...marketCopy,
       brandName: path === "orzeta" ? "ORZETA" : path === "oussoul" ? "Oussoul" : "",
-      ...getStarterCopy(market?.code),
-      netQuantity,
     },
     colors: PALETTES[product?.slug ?? ""] ?? { primary: "#243b2b", secondary: "#f1e5ce" },
     artwork: { font: "serif", panels: {} },
