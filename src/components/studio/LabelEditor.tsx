@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import oussoulMark from "@/assets/images/studio/oussoul-mark.png";
 import { AssetLibrary } from "@/components/studio/AssetLibrary";
+import { ColorField } from "@/components/studio/ColorField";
+import { FOCUS_FIELD_EVENT, focusText, type FocusFieldDetail } from "@/lib/studio/focus-field";
 import { FONTS, loadFonts } from "@/lib/studio/fonts";
 import {
   fitLayout, inkFor, labelSize, newId, prepare, PT, renderLabel, SAFE_MARGIN, templateLayout, textHeight,
@@ -22,7 +24,7 @@ const BASE_PX_PER_MM = 4;
 const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 const HANDLE_POS: Record<Handle, [number, number]> = { nw: [0, 0], n: [.5, 0], ne: [1, 0], e: [1, .5], se: [1, 1], s: [.5, 1], sw: [0, 1], w: [0, .5] };
 const CURSOR: Record<Handle, string> = { n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize", ne: "nesw-resize", sw: "nesw-resize", nw: "nwse-resize", se: "nwse-resize" };
-const PANEL_NAMES = { back: "Product information", front: "Front", right: "Nutrition" } as const;
+const PANEL_NAMES = { back: "Left side · Product information", front: "Front", right: "Right side · Nutrition" } as const;
 const textual = (e: LabelElement) => e.type === "text" || e.type === "field";
 const round = (value: number, step = .1) => Math.round(value / step) * step;
 
@@ -32,8 +34,14 @@ const round = (value: number, step = .1) => Math.round(value / step) * step;
  * real label, with folds, the safety margin and snapping shown while dragging.
  */
 export function LabelEditor({
-  content, template, line, editable, fields, onChange,
+  content, template, line, editable, fields, onChange, focus, header, footer, sidebar,
 }: {
+  /** Shown above the toolbar, under the toolbar's card, and in the left column when nothing is selected. */
+  header?: ReactNode;
+  footer?: ReactNode;
+  sidebar?: ReactNode;
+  /** Design one part of the label: the front, or the two side panels. Without it, the whole label. */
+  focus?: "front" | "sides";
   content: DesignContent;
   template: EditorTemplate;
   line: string;
@@ -52,19 +60,138 @@ export function LabelEditor({
   const [draft, setDraft] = useState<Layout | null>(null);
   const shown = draft ?? layout;
   const [selected, setSelected] = useState<string | null>(null);
+  // Each step opens with its panels at a comfortable size, whatever the size of the label.
   const [zoom, setZoom] = useState(1);
   const [guides, setGuides] = useState<Guide[]>([]);
   const [showGuides, setShowGuides] = useState(true);
   const [library, setLibrary] = useState<"add" | "replace" | null>(null);
+  /** The right-click menu: where it opened on screen and on the label, and the block it is for. */
+  const [menu, setMenu] = useState<{ x: number; y: number; at: { x: number; y: number }; id: string | null } | null>(null);
+  const [menuColour, setMenuColour] = useState(false);
+  const menuBox = useRef<HTMLDivElement>(null);
   const [undo, setUndo] = useState<Layout[]>([]);
   const [redo, setRedo] = useState<Layout[]>([]);
   const canvas = useRef<HTMLCanvasElement>(null);
+  // The whole label opens fitted to the width of the editor, whatever its size.
+  const fitted = useRef(false);
   const workspace = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const scale = BASE_PX_PER_MM * zoom;
+  // Only the blocks of the panels in focus can be picked; the rest of the label shows for context.
+  const third = size.width / 3;
+  const inFocus = (e: LabelElement) => {
+    if (!focus) return true;
+    const panel = Math.min(2, Math.max(0, Math.floor((e.x + e.w / 2) / third)));
+    return focus === "front" ? panel === 1 : panel !== 1;
+  };
+  const panels = focus === "front" ? (["front"] as const) : focus === "sides" ? (["back", "right"] as const) : (["back", "front", "right"] as const);
+  /** Panels of this step by position on the label: 0 the left side, 1 the front, 2 the right side. */
+  const allowed = focus === "front" ? [1] : focus === "sides" ? [0, 2] : [0, 1, 2];
+  const panelAt = (x: number) => Math.min(2, Math.max(0, Math.floor(x / third)));
+  // The panel being worked on: new text, fields, logos and shapes are added there.
+  const [active, setActive] = useState(focus === "sides" ? 0 : 1);
+  const PANEL_LABEL = ["Left side", "Front", "Right side"];
+
+  /**
+   * Keeps an element on the panels of this step. Dropped on another panel, it moves onto the nearest
+   * panel of the step, as far inside it as its width allows.
+   */
+  function settle(e: LabelElement, prefer?: number): LabelElement {
+    const centre = e.x + e.w / 2;
+    if (allowed.includes(panelAt(centre))) return e;
+    const distance = (n: number) => Math.abs((n + .5) * third - centre) - (n === prefer ? 2 : 0);
+    const target = allowed.reduce((best, n) => (distance(n) < distance(best) ? n : best), allowed[0]!);
+    const left = target * third;
+    const x = e.w >= third ? left + third / 2 - e.w / 2 : Math.min(Math.max(e.x, left), left + third - e.w);
+    return { ...e, x: Math.round(x * 20) / 20 };
+  }
+  const settleIn = (layout: Layout, id: string, prefer?: number): Layout => ({ ...layout, elements: layout.elements.map((e) => (e.id === id ? settle(e, prefer) : e)) });
   const element = shown.elements.find((e) => e.id === selected) ?? null;
   const placed = new Set(shown.elements.filter((e) => e.field).map((e) => e.field!));
   const labelOf = (key: string) => fields.find((f) => f.key === key)?.label ?? key;
+
+  useEffect(() => {
+    const element = workspace.current;
+    if (!element || fitted.current) return;
+    fitted.current = true;
+    const room = element.clientWidth - 80;
+    setZoom(Math.min(4, Math.max(.5, Math.floor((room / (BASE_PX_PER_MM * size.width)) * 4) / 4)));
+  }, [size.width]);
+
+  // The menu closes on a click elsewhere, Escape, scrolling or resizing, and stays inside the window.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key !== "Escape") return;
+      if (event.type === "pointerdown" && menuBox.current?.contains(event.target as Node)) return;
+      setMenu(null);
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", close);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    const box = menuBox.current;
+    if (box) {
+      const rect = box.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) box.style.left = `${Math.max(8, window.innerWidth - rect.width - 8)}px`;
+      if (rect.bottom > window.innerHeight - 8) box.style.top = `${Math.max(8, window.innerHeight - rect.height - 8)}px`;
+      box.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+    }
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [menu, menuColour]);
+
+  /** Up and down arrows move through the menu's buttons. */
+  function menuKeys(event: React.KeyboardEvent) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = [...(menuBox.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? [])];
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    items[(index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+  }
+
+  function addImageAt(point: { x: number; y: number } | undefined) {
+    setImageAt(point);
+    setLibrary("add");
+  }
+
+  function openMenu(event: React.MouseEvent, id: string | null) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!editable) return;
+    const at = toMm(event);
+    if (id) setSelected(id);
+    else setSelected(null);
+    if (allowed.includes(panelAt(at.x))) setActive(panelAt(at.x));
+    setMenuColour(false);
+    setMenu({ x: event.clientX, y: event.clientY, at, id });
+  }
+
+  // A check asks for a field: select the block that prints it, so its text opens in the side panel with the
+  // placeholder selected. A field not on the label opens in the side panel's text list instead.
+  useEffect(() => {
+    const onFocusField = (event: Event) => {
+      const detail = (event as CustomEvent<FocusFieldDetail>).detail;
+      const block = shown.elements.find((e) => e.field === detail.field && !e.hidden && inFocus(e))
+        ?? shown.elements.find((e) => e.field === detail.field && !e.hidden);
+      detail.handled = true;
+      setMenu(null);
+      if (block) {
+        setSelected(block.id);
+        if (allowed.includes(panelAt(block.x + block.w / 2))) setActive(panelAt(block.x + block.w / 2));
+        setTimeout(() => focusText(document.getElementById("le-text") as HTMLTextAreaElement | null), 60);
+      } else {
+        setSelected(null);
+        setTimeout(() => focusText(document.getElementById(`field-${detail.field}`) as HTMLTextAreaElement | null), 60);
+      }
+    };
+    window.addEventListener(FOCUS_FIELD_EVENT, onFocusField);
+    return () => window.removeEventListener(FOCUS_FIELD_EVENT, onFocusField);
+  });
 
   // Draw the label at screen resolution whenever it changes.
   useEffect(() => {
@@ -82,7 +209,7 @@ export function LabelEditor({
   }, [content, layout, onChange]);
 
   const patch = (id: string, changes: Partial<LabelElement>) =>
-    commit({ ...layout, elements: layout.elements.map((e) => (e.id === id ? { ...e, ...changes } : e)) });
+    commit(settleIn({ ...layout, elements: layout.elements.map((e) => (e.id === id ? { ...e, ...changes } : e)) }, id));
 
   function restore(target: Layout | undefined, from: Layout[], to: (update: (list: Layout[]) => Layout[]) => void, back: (update: (list: Layout[]) => Layout[]) => void) {
     if (!target) return;
@@ -99,26 +226,39 @@ export function LabelEditor({
     commit({ ...layout, elements: [...layout.elements, next] });
     setSelected(next.id);
   }
-  const frontLeft = size.width / 3 + size.width / 3 * .12;
+  // New blocks start on the front, or on the left side while designing the sides.
+  const panelLeft = (allowed.includes(active) ? active : allowed[0]!) * third;
+  const frontLeft = panelLeft + third * .12;
   const frontWidth = size.width / 3 * .76;
   const ink = inkFor(content, line);
-  const addText = () => add({ type: "text", name: "Text", text: "Your text", x: frontLeft, y: size.height * .45, w: frontWidth, h: 5, font: "roboto-condensed", size: 10, color: ink, align: "center" });
-  const addField = (key: string) => add({ type: "field", field: key, name: labelOf(key), x: frontLeft, y: size.height * .45, w: frontWidth, h: 5, font: "roboto-condensed", size: 6.5, color: ink, lineHeight: 1.2, ...(key === "nutrition" ? { table: true } : {}) });
-  const addShape = (shape: "rect" | "ellipse" | "line") => add({
+  type Point = { x: number; y: number };
+  /** Where a new block of this width goes: centred on the clicked point, inside its panel, or on the active panel. */
+  const placeAt = (w: number, at: Point | undefined, y: number) => {
+    if (!at) return { x: frontLeft, y };
+    const left = panelAt(at.x) * third;
+    return { x: Math.round(Math.min(Math.max(at.x - w / 2, left + 1), left + third - w - 1) * 20) / 20, y: Math.round(Math.max(1, at.y) * 20) / 20 };
+  };
+  const addText = (at?: Point) => add({ type: "text", name: "Text", text: "Your text", ...placeAt(frontWidth, at, size.height * .45), w: frontWidth, h: 5, font: "roboto-condensed", size: 10, color: ink, align: "center" });
+  const addField = (key: string, at?: Point) => add({ type: "field", field: key, name: labelOf(key), ...placeAt(frontWidth, at, size.height * .45), w: frontWidth, h: 5, font: "roboto-condensed", size: 6.5, color: ink, lineHeight: 1.2, ...(key === "nutrition" ? { table: true } : {}) });
+  const addShape = (shape: "rect" | "ellipse" | "line", at?: Point) => add({
     type: "shape", shape, name: shape === "rect" ? "Rectangle" : shape === "ellipse" ? "Ellipse" : "Line",
-    x: frontLeft, y: size.height * .4, w: frontWidth, h: shape === "line" ? 1 : 20,
+    ...placeAt(frontWidth, at, size.height * .4), w: frontWidth, h: shape === "line" ? 1 : 20,
     ...(shape === "line" ? { stroke: ink, strokeWidth: .3 } : { fill: content.colors.secondary }), radius: 0,
   });
+  // A logo chosen from "Add logo here" goes where the menu was opened.
+  const [imageAt, setImageAt] = useState<Point | undefined>(undefined);
   function pickImage(url: string, name: string) {
     if (library === "replace" && element) patch(element.id, { src: url, name });
     else {
       const image = new Image();
       image.onload = () => {
-        const w = size.width / 3 * .5;
+        const w = third * .5;
         const h = image.naturalWidth && image.naturalHeight ? Math.min(size.height * .5, (w * image.naturalHeight) / image.naturalWidth) : w;
-        add({ type: "image", name, src: url, x: size.width / 2 - w / 2, y: size.height * .15, w, h });
+        const at = imageAt;
+        add({ type: "image", name, src: url, ...(at ? placeAt(w, at, at.y) : { x: panelLeft + third / 2 - w / 2, y: size.height * .15 }), w, h });
+        setImageAt(undefined);
       };
-      image.onerror = () => add({ type: "image", name, src: url, x: size.width / 2 - 25, y: size.height * .15, w: 50, h: 50 });
+      image.onerror = () => add({ type: "image", name, src: url, x: panelLeft + third / 2 - third * .25, y: size.height * .15, w: third * .5, h: third * .5 });
       image.src = url;
     }
     setLibrary(null);
@@ -268,7 +408,12 @@ export function LabelEditor({
     const g = gesture.current;
     gesture.current = null;
     setGuides([]);
-    if (g && draft) commit(draft, g.before);
+    if (g && draft) {
+      const settled = settleIn(draft, g.id, panelAt(g.origin.x + g.origin.w / 2));
+      const moved = settled.elements.find((e) => e.id === g.id);
+      if (moved) setActive(panelAt(moved.x + moved.w / 2));
+      commit(settled, g.before);
+    }
     setDraft(null);
   }
 
@@ -300,15 +445,9 @@ export function LabelEditor({
         onChange={(e) => { const v = Number(e.target.value); if (e.target.value !== "" && Number.isFinite(v)) onSet(v); }} />
     </label>
   );
+  const swatches = [content.colors.primary, content.colors.secondary, ink, ...Object.values(layout.backgrounds ?? {})];
   const colour = (label: string, value: string | undefined, onSet: (value: string | undefined) => void, clearable = false) => (
-    <label className="field text-xs">{label}
-      <span className="flex items-center gap-1">
-        <input type="color" className="input min-h-9 w-12 cursor-pointer p-1" value={value ?? "#ffffff"} onChange={(e) => onSet(e.target.value)} />
-        <input className="input min-h-9 px-2 font-mono text-xs" value={value ?? ""} placeholder={clearable ? "None" : ""} maxLength={7}
-          onChange={(e) => { const v = e.target.value; if (/^#[0-9a-f]{6}$/i.test(v)) onSet(v.toLowerCase()); else if (!v && clearable) onSet(undefined); }} />
-        {clearable && value && <button type="button" className="le-tool le-mini" onClick={() => onSet(undefined)} aria-label={`Remove ${label}`}>×</button>}
-      </span>
-    </label>
+    <ColorField label={label} value={value} onChange={onSet} clearable={clearable} swatches={swatches} />
   );
 
   const mm = (value: number) => `${(Math.round(value * 10) / 10).toLocaleString()} mm`;
@@ -317,9 +456,19 @@ export function LabelEditor({
   const unplaced = fields.filter((f) => !placed.has(f.key) && f.key !== "destinationCountry");
 
   return (
-    <section className="grid gap-3" aria-label="Label editor">
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className="le-tool" disabled={!editable} onClick={addText}>＋ Text</button>
+    <section className="le-root" aria-label="Label editor">
+      <div className="ws-center card grid content-start gap-3">
+      {header}
+      <div className="le-toolbar">
+        {allowed.length > 1 && (
+          <span className="studio-segment rounded-lg border border-line bg-white p-0.5" aria-label="Add to panel">
+            <span className="px-2 text-xs font-semibold text-mid">Add to</span>
+            {allowed.map((n) => (
+              <button key={n} type="button" aria-pressed={active === n} onClick={() => setActive(n)}>{PANEL_LABEL[n]}</button>
+            ))}
+          </span>
+        )}
+        <button type="button" className="le-tool" disabled={!editable} onClick={() => addText()}>＋ Text</button>
         <label className="le-tool">＋ Field
           <select className="max-w-40 bg-transparent text-xs" disabled={!editable} value="" onChange={(e) => e.target.value && addField(e.target.value)}>
             <option value="">{unplaced.length ? `${unplaced.length} not on the label` : "Choose"}</option>
@@ -352,10 +501,16 @@ export function LabelEditor({
         )}
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div ref={workspace} className="le-workspace" tabIndex={0} onKeyDown={onKeyDown}
+          onContextMenu={(event) => openMenu(event, null)}
           onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-          onPointerDown={() => setSelected(null)}>
+          onPointerDown={(event) => {
+            setSelected(null);
+            const box = workspace.current?.querySelector(".le-page")?.getBoundingClientRect();
+            if (!box) return;
+            const x = (event.clientX - box.left) / scale;
+            if (x >= 0 && x <= size.width && allowed.includes(panelAt(x))) setActive(panelAt(x));
+          }}>
           <div className="le-page" style={{ width: size.width * scale, height: size.height * scale }}>
             <canvas ref={canvas} role="img" aria-label="Unit label artwork" />
             <div className="le-overlay">
@@ -363,21 +518,32 @@ export function LabelEditor({
                 <div className="le-fold" style={{ left: (size.width / 3) * scale }} />
                 <div className="le-fold" style={{ left: ((2 * size.width) / 3) * scale }} />
                 <div className="le-safe" style={{ inset: SAFE_MARGIN * scale }} />
-                {(["back", "front", "right"] as const).map((panel, index) => (
-                  <span key={panel} className="le-ruler" style={{ left: (index * size.width / 3) * scale + 4, top: -16 }}>{PANEL_NAMES[panel]}</span>
+                {panels.map((panel) => (
+                  <span key={panel} className="le-ruler" style={{ left: ((panel === "back" ? 0 : panel === "front" ? 1 : 2) * size.width / 3) * scale + 4, top: -16 }}>{PANEL_NAMES[panel]}</span>
                 ))}
                 <span className="le-ruler" style={{ right: 0, bottom: -16 }}>{size.width} × {size.height} mm</span>
               </>)}
-              {fontsReady && shown.elements.map((e) => !e.hidden && (
+              {focus === "sides" && (
+                <div className="le-dim" style={{ left: third * scale, width: third * scale }}>Front<br />(step 3)</div>
+              )}
+              {focus === "front" && [0, 2].map((n) => (
+                <div key={n} className="le-dim" style={{ left: n * third * scale, width: third * scale }}>{n ? "Right side" : "Left side"}<br />(step 4)</div>
+              ))}
+              {allowed.length > 1 && (
+                <div className="le-active" style={{ left: active * third * scale, width: third * scale }} aria-hidden="true" />
+              )}
+              {fontsReady && shown.elements.map((e) => !e.hidden && (inFocus(e) || e.id === selected) && (
                 <div key={e.id} className="le-box" data-selected={e.id === selected} data-locked={Boolean(e.locked)} data-empty={empty(e)}
                   title={e.name ?? (e.field ? labelOf(e.field) : e.type)}
                   style={{ left: e.x * scale, top: e.y * scale, width: e.w * scale, height: e.h * scale, transform: e.rotation ? `rotate(${e.rotation}deg)` : undefined }}
                   onPointerDown={(event) => {
                     event.stopPropagation();
                     setSelected(e.id);
-                    if (!e.locked) begin(event, { kind: "move", id: e.id, start: toMm(event), origin: e, before: layout });
+                    if (allowed.includes(panelAt(e.x + e.w / 2))) setActive(panelAt(e.x + e.w / 2));
+                    if (!e.locked && event.button === 0) begin(event, { kind: "move", id: e.id, start: toMm(event), origin: e, before: layout });
                   }}
-                  onDoubleClick={() => document.getElementById("le-text")?.focus()}>
+                  onDoubleClick={() => document.getElementById("le-text")?.focus()}
+                  onContextMenu={(event) => openMenu(event, e.id)}>
                   {e.id === selected && editable && !e.locked && (<>
                     {HANDLES.filter((hd) => !textual(e) || !["n", "s"].includes(hd)).map((hd) => (
                       <span key={hd} className="le-handle" style={{ left: `${HANDLE_POS[hd][0] * 100}%`, top: `${HANDLE_POS[hd][1] * 100}%`, cursor: CURSOR[hd] }}
@@ -396,8 +562,10 @@ export function LabelEditor({
             </div>
           </div>
         </div>
+        {footer}
+      </div>
 
-        <aside className="grid content-start gap-3 rounded-xl border border-line bg-sand/40 p-3 text-sm">
+        <aside className="ws-side card grid content-start gap-3 text-sm">
           {element ? (
             <fieldset className="grid gap-3" disabled={!editable}>
               <div className="flex items-center justify-between gap-2">
@@ -490,6 +658,22 @@ export function LabelEditor({
                 <button type="button" className="le-tool justify-self-start" onClick={() => setLibrary("replace")}>Replace image…</button>
               )}
 
+              {allowed.length > 1 && (
+                <div className="grid gap-1">
+                  <span className="text-xs font-medium">Panel</span>
+                  <div className="flex flex-wrap gap-1">
+                    {allowed.map((n) => {
+                      const here = panelAt(element.x + element.w / 2);
+                      return (
+                        <button key={n} type="button" className="le-tool le-mini" aria-pressed={here === n} disabled={element.locked || here === n}
+                          onClick={() => { patch(element.id, { x: element.x + (n - here) * third }); setActive(n); }}>
+                          {here === n ? PANEL_LABEL[n] : `Move to ${PANEL_LABEL[n]!.toLowerCase()}`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="grid gap-1">
                 <span className="text-xs font-medium">Align on its panel</span>
                 <div className="flex flex-wrap gap-1">
@@ -510,9 +694,10 @@ export function LabelEditor({
             </fieldset>
           ) : (
             <fieldset className="grid gap-3" disabled={!editable}>
+              {sidebar}
               <p className="text-xs text-mid">Click a block on the label to edit it. Drag to move, use the handles to resize or rotate. Arrow keys nudge 0.5 mm (Shift: 5 mm), Alt turns snapping off.</p>
               <h3 className="text-xs font-semibold">Panel backgrounds</h3>
-              {(["back", "front", "right"] as const).map((panel) => (
+              {panels.map((panel) => (
                 <div key={panel}>{colour(PANEL_NAMES[panel], shown.backgrounds?.[panel] ?? content.colors.primary, (v) =>
                   commit({ ...layout, backgrounds: { ...layout.backgrounds, [panel]: v ?? content.colors.primary } }))}</div>
               ))}
@@ -526,7 +711,7 @@ export function LabelEditor({
           <div className="grid gap-1 border-t border-line pt-3">
             <h3 className="text-xs font-semibold">Layers</h3>
             <ul className="grid max-h-64 gap-0.5 overflow-auto" role="listbox" aria-label="Layers">
-              {[...shown.elements].reverse().map((e) => (
+              {[...shown.elements].reverse().filter(inFocus).map((e) => (
                 <li key={e.id} className="le-layer" role="option" aria-selected={e.id === selected} onClick={() => setSelected(e.id)}>
                   <span className="w-4 text-center text-xs text-mid">{e.type === "image" ? "▣" : e.type === "shape" ? "▭" : e.type === "field" ? "¶" : "T"}</span>
                   <span className={`flex-1 truncate ${e.hidden ? "text-mid line-through" : ""} ${empty(e) ? "text-danger" : ""}`}>
@@ -541,9 +726,125 @@ export function LabelEditor({
             </ul>
           </div>
         </aside>
-      </div>
 
-      {library && <AssetLibrary onPick={pickImage} onClose={() => setLibrary(null)}
+      {menu && (
+        <div ref={menuBox} className="le-menu" role="menu" aria-label={menu.id ? "Block actions" : "Add to the label"}
+          style={{ left: menu.x, top: menu.y }} onContextMenu={(event) => event.preventDefault()} onKeyDown={menuKeys}>
+      {(() => {
+        const target = shown.elements.find((e) => e.id === menu.id) ?? null;
+        const run = (action: () => void) => () => { action(); setMenu(null); };
+        const panel = panelAt(menu.at.x);
+        const onStep = allowed.includes(panel);
+        const here = onStep ? menu.at : undefined;
+        const panelKey = (["back", "front", "right"] as const)[panel]!;
+        const grow = (factor: number) => {
+          if (!target) return;
+          if (textual(target)) patch(target.id, { size: Math.max(3, Math.min(300, Math.round((target.size ?? 9) * factor * 2) / 2)) });
+          else {
+            const w = target.w * factor;
+            const h = target.h * factor;
+            patch(target.id, { w, h, x: target.x + (target.w - w) / 2, y: target.y + (target.h - h) / 2 });
+          }
+        };
+        const colourKey = target ? (textual(target) ? "color" : target.shape === "line" ? "stroke" : target.type === "shape" ? "fill" : null) : null;
+        const colourValue = target && colourKey ? (target[colourKey] as string | undefined) : layout.backgrounds?.[panelKey] ?? content.colors.primary;
+        const setColour = (value: string | undefined) => {
+          if (target && colourKey) patch(target.id, { [colourKey]: value ?? (colourKey === "color" ? ink : undefined) });
+          else if (!target) commit({ ...layout, backgrounds: { ...layout.backgrounds, [panelKey]: value ?? content.colors.primary } });
+        };
+        const item = (label: string, action: () => void, hint?: string, disabled = false) => (
+          <button key={label} type="button" role="menuitem" className="le-menu-item" disabled={disabled} onClick={run(action)}>
+            <span>{label}</span>{hint && <kbd>{hint}</kbd>}
+          </button>
+        );
+        return (
+          <>
+            {target ? (<>
+              <p className="le-menu-title">{target.name || (target.field ? labelOf(target.field) : target.type)}</p>
+              {textual(target) && item("Edit text", () => setTimeout(() => document.getElementById("le-text")?.focus(), 30), "Double-click")}
+              {target.type === "image" && item("Replace image…", () => setLibrary("replace"))}
+              <div className="le-menu-row" role="group" aria-label="Size">
+                <span>Size</span>
+                <button type="button" onClick={() => grow(1 / 1.1)} aria-label="Smaller">−</button>
+                <span className="le-menu-value">{textual(target) ? `${target.size ?? 9} pt` : `${Math.round(target.w * 10) / 10} mm`}</span>
+                <button type="button" onClick={() => grow(1.1)} aria-label="Bigger">+</button>
+              </div>
+              {textual(target) && (
+                <div className="le-menu-row" role="group" aria-label="Style">
+                  <button type="button" className="font-bold" aria-pressed={(target.weight ?? 400) >= 700} onClick={() => patch(target.id, { weight: (target.weight ?? 400) >= 700 ? 400 : 700 })}>B</button>
+                  <button type="button" className="italic" aria-pressed={Boolean(target.italic)} onClick={() => patch(target.id, { italic: !target.italic })}>I</button>
+                  <button type="button" aria-pressed={Boolean(target.uppercase)} onClick={() => patch(target.id, { uppercase: !target.uppercase })}>AA</button>
+                  {(["left", "center", "right"] as const).map((a) => (
+                    <button key={a} type="button" aria-pressed={(target.align ?? "left") === a} onClick={() => patch(target.id, { align: a })} aria-label={`Align ${a}`}>
+                      {a === "left" ? "⟸" : a === "center" ? "≡" : "⟹"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {colourKey && (
+                <div className="le-menu-colours">
+                  <span>{colourKey === "color" ? "Text colour" : colourKey === "stroke" ? "Line colour" : "Fill"}</span>
+                  <div className="studio-swatches">
+                    {[...new Set(swatches.map((c) => c.toLowerCase()))].slice(0, 6).map((c) => (
+                      <button key={c} type="button" style={{ background: c }} aria-pressed={c === colourValue} aria-label={`Use ${c.toUpperCase()}`} onClick={() => setColour(c)} />
+                    ))}
+                    <button type="button" className="le-menu-more" onClick={() => setMenuColour((v) => !v)} aria-expanded={menuColour}>HEX / RGB…</button>
+                  </div>
+                  {menuColour && <ColorField label="Colour" value={colourValue} onChange={setColour} clearable={colourKey !== "color"} swatches={swatches} compact />}
+                </div>
+              )}
+              <hr />
+              {allowed.length > 1 && allowed.filter((n) => n !== panelAt(target.x + target.w / 2)).map((n) =>
+                item(`Move to ${PANEL_LABEL[n]!.toLowerCase()}`, () => { patch(target.id, { x: target.x + (n - panelAt(target.x + target.w / 2)) * third }); setActive(n); }, undefined, target.locked))}
+              {item("Centre on its panel", () => alignTo(target.id, "center"), undefined, target.locked)}
+              {item("Bring to front", () => reorder(target.id, "top"))}
+              {item("Send to back", () => reorder(target.id, "bottom"))}
+              <hr />
+              {item("Duplicate", () => duplicate(target.id), "Ctrl+D")}
+              {item(target.locked ? "Unlock" : "Lock", () => patch(target.id, { locked: !target.locked }))}
+              {item(target.hidden ? "Show" : "Hide", () => patch(target.id, { hidden: !target.hidden }))}
+              {item("Delete", () => remove(target.id), "Del", target.locked)}
+            </>) : (<>
+              <p className="le-menu-title">{onStep ? `Add to the ${PANEL_LABEL[panel]!.toLowerCase()}` : "This panel is designed in another step"}</p>
+              {item("Text here", () => addText(here), undefined, !onStep)}
+              {item("Logo or image here…", () => addImageAt(here), undefined, !onStep)}
+              {unplaced.length > 0 && (
+                <div className="le-menu-fields">
+                  <span>Field here</span>
+                  {unplaced.slice(0, 8).map((f) => (
+                    <button key={f.key} type="button" role="menuitem" className="le-menu-item" disabled={!onStep} onClick={run(() => addField(f.key, here))}>{f.label}</button>
+                  ))}
+                </div>
+              )}
+              <div className="le-menu-row" role="group" aria-label="Shapes">
+                <span>Shape</span>
+                <button type="button" disabled={!onStep} onClick={run(() => addShape("rect", here))} title="Box">▭</button>
+                <button type="button" disabled={!onStep} onClick={run(() => addShape("ellipse", here))} title="Ellipse">◯</button>
+                <button type="button" disabled={!onStep} onClick={run(() => addShape("line", here))} title="Line">―</button>
+              </div>
+              {onStep && (
+                <div className="le-menu-colours">
+                  <span>{PANEL_LABEL[panel]} background</span>
+                  <div className="studio-swatches">
+                    {[...new Set(swatches.map((c) => c.toLowerCase()))].slice(0, 6).map((c) => (
+                      <button key={c} type="button" style={{ background: c }} aria-pressed={c === colourValue} aria-label={`Use ${c.toUpperCase()}`} onClick={() => setColour(c)} />
+                    ))}
+                    <button type="button" className="le-menu-more" onClick={() => setMenuColour((v) => !v)} aria-expanded={menuColour}>HEX / RGB…</button>
+                  </div>
+                  {menuColour && <ColorField label="Background" value={colourValue} onChange={setColour} swatches={swatches} compact />}
+                </div>
+              )}
+              <hr />
+              {item("Undo", doUndo, "Ctrl+Z", !undo.length)}
+              {item("Redo", doRedo, "Ctrl+Y", !redo.length)}
+            </>)}
+          </>
+        );
+      })()}
+        </div>
+      )}
+
+      {library && <AssetLibrary onPick={pickImage} onClose={() => { setImageAt(undefined); setLibrary(null); }}
         extra={[{ name: "Oussoul mark", url: oussoulMark.src }]} />}
     </section>
   );

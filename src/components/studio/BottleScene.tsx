@@ -20,7 +20,23 @@ type Properties = {
   referenceModel?: boolean;
   useOriginalArtwork?: boolean;
   onRotate?: (yaw: number, pitch: number) => void;
+  /** Zoom changed in the viewer (wheel, pinch, keys or its toolbar), in percent. */
+  onZoom?: (zoom: number) => void;
+  /** Double-click or the reset button: the owner puts the view back where it started. */
+  onReset?: () => void;
 };
+
+/** The camera of the viewer: model turn in degrees, zoom factor and pan in scene units. */
+type Camera = { yaw: number; pitch: number; zoom: number; panX: number; panY: number };
+const MIN_ZOOM = .6;
+const MAX_ZOOM = 4;
+const CAMERA_DISTANCE = 6.25;
+const FOV = 34;
+const wrap180 = (angle: number) => THREE.MathUtils.euclideanModulo(angle + 180, 360) - 180;
+/** Half the visible height of the scene at the bottle, which converts screen pixels into scene units. */
+const halfHeight = (zoom: number) => CAMERA_DISTANCE * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / zoom;
+/** Panning only makes sense when zoomed in; zoomed out, the bottle stays centred. */
+const maxPan = (zoom: number) => Math.max(0, 1.9 * (1 - 1 / zoom));
 
 type Renderer = {
   scene: THREE.Scene;
@@ -30,6 +46,13 @@ type Renderer = {
   shadow: ReturnType<typeof contactShadow>;
 };
 const BAND_ORDER: PanelFace[] = ["front", "right", "back", "left"];
+/**
+ * Where each panel of the unit label sits on the bottle. The label wraps the left side, the front and the
+ * right side, like the printed ORZETA labels: product information on the left, nutrition on the right.
+ * The back of the bottle stays clear glass.
+ */
+const ON_BOTTLE: Partial<Record<PanelFace, PanelFace | null>> = { front: "front", right: "right", back: null, left: "back" };
+const GLASS_ORDER: (PanelFace | null)[] = ["back", "front", "right"];
 const BOX_ORDER: PanelFace[] = ["right", "left", "top", "bottom", "front", "back"];
 
 function disposeModel(model: THREE.Group) {
@@ -162,13 +185,18 @@ function measureGlass(scene: THREE.Group): GlassBody {
   return { shape: "square", half, corner, bottom, top, height };
 }
 
-/** The outline of the label around the body, starting at the front-left corner and running front, right, back, left. */
+/**
+ * The outline of the label around the body: from the back of the left side, across the front, to the back
+ * of the right side. The back of the bottle has no label.
+ */
 function glassOutline(body: GlassBody, gap: number) {
   const points: [number, number][] = [];
+  const q = Math.PI / 2;
   if (body.shape === "round") {
+    // A quarter of the circumference per panel, centred on the left, the front and the right.
     const radius = body.radius + gap;
-    for (let n = 0; n <= 128; n++) {
-      const angle = n / 128 * Math.PI * 2 - Math.PI / 4;
+    for (let n = 0; n <= 120; n++) {
+      const angle = -1.5 * q + n / 120 * 3 * q;
       points.push([Math.sin(angle) * radius, Math.cos(angle) * radius]);
     }
     return points;
@@ -185,16 +213,13 @@ function glassOutline(body: GlassBody, gap: number) {
   const side = (x0: number, z0: number, x1: number, z1: number) => {
     for (let n = 1; n < 16; n++) points.push([x0 + (x1 - x0) * n / 16, z0 + (z1 - z0) * n / 16]);
   };
-  const q = Math.PI / 2;
-  arc(-flat, flat, -q / 2, 0);
+  points.push([-half, -flat]);
+  side(-half, -flat, -half, flat);
+  arc(-flat, flat, -q, 0);
   side(-flat, half, flat, half);
   arc(flat, flat, 0, q);
   side(half, flat, half, -flat);
-  arc(flat, -flat, q, 2 * q);
-  side(flat, -half, -flat, -half);
-  arc(-flat, -flat, 2 * q, 3 * q);
-  side(-half, -flat, -half, flat);
-  arc(-flat, flat, 3 * q, 3.5 * q);
+  points.push([half, -flat]);
   return points;
 }
 
@@ -223,24 +248,27 @@ function labelBand(outline: [number, number][], lower: number, upper: number) {
 }
 
 /**
- * Lays the four label faces side by side (front, right, back, left), each sized to its share of the
- * band so the artwork keeps its proportions, with a light print shading.
+ * Lays the label panels side by side in the order they go round the bottle, each sized to its share of
+ * the band so the artwork keeps its proportions, with a light print shading. A null panel is plain paper
+ * in the label's colour.
  */
-function paintWrap(artwork: Properties["artwork"], labelHeight: number, faceWidth: (face: PanelFace) => number) {
+function paintWrap(artwork: Properties["artwork"], labelHeight: number, faceWidth: (index: number) => number, order: (PanelFace | null)[]) {
   const wrap = document.createElement("canvas");
-  wrap.width = LABEL_SIZE * BAND_ORDER.length;
+  wrap.width = LABEL_SIZE * order.length;
   wrap.height = LABEL_SIZE;
   const ctx = wrap.getContext("2d");
-  BAND_ORDER.forEach((face, index) => {
-    const panel = artwork[face];
-    if (!panel || !ctx) return;
-    const pixel = panel.getContext("2d")?.getImageData(0, 0, 1, 1).data;
+  const paper = artwork.front?.getContext("2d")?.getImageData(0, 0, 1, 1).data;
+  order.forEach((face, index) => {
+    const panel = face ? artwork[face] : undefined;
+    if (!ctx) return;
+    const pixel = panel?.getContext("2d")?.getImageData(0, 0, 1, 1).data ?? paper;
     if (pixel) {
       ctx.fillStyle = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
       ctx.fillRect(LABEL_SIZE * index, 0, LABEL_SIZE, LABEL_SIZE);
     }
-    const minimum = face === "front" ? .94 : .63;
-    const width = Math.min(LABEL_SIZE, Math.max(LABEL_SIZE * minimum, Math.round(panel.width * labelHeight / faceWidth(face))));
+    if (!panel) return;
+    const minimum = .94;
+    const width = Math.min(LABEL_SIZE, Math.max(LABEL_SIZE * minimum, Math.round(panel.width * labelHeight / faceWidth(index))));
     ctx.drawImage(panel, LABEL_SIZE * index + (LABEL_SIZE - width) / 2, 0, width, LABEL_SIZE);
     const left = LABEL_SIZE * index;
     const shading = ctx.createLinearGradient(left, 0, left + LABEL_SIZE, 0);
@@ -370,8 +398,8 @@ function createModel(model: THREE.Group, { format, volume, part, artwork, offset
   const labelZone = bodyHeight - (tin ? .18 : .48);
   const upper = top - (tin ? .08 : .40) - labelZone * offset / 100;
   const lower = Math.max(base + .11, upper - labelZone * labelHeight / 100);
-  const wrap = paintWrap(artwork, upper - lower, (face) =>
-    bodyRadius * (dorica ? Math.PI / 2 : 2) * (face === "front" || face === "back" ? 1 : depth));
+  const wrap = paintWrap(artwork, upper - lower, (index) =>
+    bodyRadius * (dorica ? Math.PI / 2 : 2) * (index % 2 === 0 ? 1 : depth), BAND_ORDER.map((face) => ON_BOTTLE[face] ?? null));
   model.add(new THREE.Mesh(profileSurface([[bodyRadius + .008, lower], [bodyRadius + .008, upper]], depth, square), new THREE.MeshBasicMaterial({
     map: createTexture(wrap),
     color: "#ffffff",
@@ -383,7 +411,24 @@ function createModel(model: THREE.Group, { format, volume, part, artwork, offset
 export function BottleScene(props: Properties) {
   const host = useRef<HTMLDivElement>(null);
   const instance = useRef<Renderer | null>(null);
-  const drag = useRef<{ id: number; x: number; y: number; yaw: number; pitch: number } | null>(null);
+  const wrapper = useRef<HTMLDivElement>(null);
+  // The viewer eases its camera towards a target, so every move (drag, wheel, view buttons) is smooth.
+  const current = useRef<Camera>({ yaw: props.yaw, pitch: props.pitch, zoom: props.zoom / 100, panX: 0, panY: 0 });
+  const target = useRef<Camera>({ ...current.current });
+  const velocity = useRef({ yaw: 0, pitch: 0 });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<
+    | { kind: "orbit"; x: number; y: number; yaw: number; pitch: number; last: { x: number; y: number; t: number } }
+    | { kind: "pan"; x: number; y: number; panX: number; panY: number }
+    | { kind: "pinch"; distance: number; mid: { x: number; y: number }; zoom: number; panX: number; panY: number }
+    | null
+  >(null);
+  const frame = useRef(0);
+  const reported = useRef({ yaw: props.yaw, pitch: props.pitch, zoom: props.zoom, at: 0 });
+  const [spinning, setSpinning] = useState(false);
+  const spin = useRef(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [hint, setHint] = useState(true);
   const [available, setAvailable] = useState(true);
   const [referenceFailed, setReferenceFailed] = useState(false);
   const referenceMaterial = useRef<THREE.MeshStandardMaterial | null>(null);
@@ -606,7 +651,7 @@ export function BottleScene(props: Properties) {
     const upper = body.top - zone * offset / 100;
     const lower = Math.max(body.bottom, upper - zone * labelHeight / 100);
     const { geometry, perimeter } = labelBand(glassOutline(body, LABEL_GAP), lower, upper);
-    const texture = createTexture(paintWrap(artwork, upper - lower, () => perimeter / BAND_ORDER.length));
+    const texture = createTexture(paintWrap(artwork, upper - lower, () => perimeter / GLASS_ORDER.length, GLASS_ORDER));
     const band = new THREE.Group();
     band.add(
       new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })),
@@ -622,31 +667,283 @@ export function BottleScene(props: Properties) {
     view.renderer.render(view.scene, view.camera);
   }, [artwork, glassReady, glassUrl, offset, labelHeight]);
 
-  useEffect(() => {
+  /** Puts the camera where `current` says and draws one frame. */
+  function apply() {
     const view = instance.current;
     if (!view) return;
-    view.model.rotation.set(THREE.MathUtils.degToRad(pitch), THREE.MathUtils.degToRad(yaw), 0);
-    view.camera.zoom = zoom / 100;
+    const c = current.current;
+    view.model.rotation.set(THREE.MathUtils.degToRad(c.pitch), THREE.MathUtils.degToRad(c.yaw), 0);
+    view.camera.zoom = c.zoom;
+    view.camera.position.set(c.panX, .34 + c.panY, CAMERA_DISTANCE);
+    view.camera.lookAt(c.panX, -.02 + c.panY, 0);
     view.camera.updateProjectionMatrix();
     view.renderer.render(view.scene, view.camera);
-  }, [yaw, pitch, zoom]);
+  }
+
+  /** Tells the owner where the view is, a few times a second while it moves and once when it stops. */
+  function report(force = false) {
+    const t = target.current;
+    const now = performance.now();
+    if (!force && now - reported.current.at < 120) return;
+    const yawNow = Math.round(wrap180(t.yaw));
+    const pitchNow = Math.round(t.pitch);
+    const zoomNow = Math.round(t.zoom * 100);
+    if (yawNow !== reported.current.yaw || pitchNow !== reported.current.pitch) props.onRotate?.(yawNow, pitchNow);
+    if (zoomNow !== reported.current.zoom) props.onZoom?.(zoomNow);
+    reported.current = { yaw: yawNow, pitch: pitchNow, zoom: zoomNow, at: now };
+  }
+
+  /** Runs the animation until the camera reaches its target and any spin has died down. */
+  function animate() {
+    if (frame.current) return;
+    let last = performance.now();
+    const step = (time: number) => {
+      const dt = Math.min(4, (time - last) / 16.67);
+      last = time;
+      const t = target.current;
+      const c = current.current;
+      const v = velocity.current;
+      if (!gesture.current) {
+        // Momentum after a flick, slowing down like a turntable.
+        t.yaw += v.yaw * dt;
+        t.pitch = THREE.MathUtils.clamp(t.pitch + v.pitch * dt, -90, 90);
+        const decay = Math.pow(.92, dt);
+        v.yaw *= decay;
+        v.pitch *= decay;
+        if (Math.abs(v.yaw) < .02) v.yaw = 0;
+        if (Math.abs(v.pitch) < .02) v.pitch = 0;
+        if (spin.current) t.yaw += .4 * dt;
+      }
+      const ease = 1 - Math.pow(.75, dt);
+      let moving = false;
+      for (const key of ["yaw", "pitch", "zoom", "panX", "panY"] as const) {
+        const gap = t[key] - c[key];
+        const settled = Math.abs(gap) < (key === "zoom" ? .0005 : key.startsWith("pan") ? .0005 : .01);
+        c[key] = settled ? t[key] : c[key] + gap * ease;
+        if (!settled) moving = true;
+      }
+      apply();
+      report();
+      if (moving || v.yaw || v.pitch || spin.current || gesture.current) frame.current = requestAnimationFrame(step);
+      else {
+        frame.current = 0;
+        report(true);
+      }
+    };
+    frame.current = requestAnimationFrame(step);
+  }
+
+  useEffect(() => () => {
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+  }, []);
+
+  // The owner's view buttons, sliders and resets move the target; the viewer's own reports are skipped.
+  useEffect(() => {
+    const t = target.current;
+    const echo = yaw === reported.current.yaw && pitch === reported.current.pitch;
+    if (!echo && (Math.round(wrap180(t.yaw)) !== yaw || Math.round(t.pitch) !== pitch)) {
+      // Turn the short way round.
+      t.yaw += wrap180(yaw - t.yaw);
+      t.pitch = THREE.MathUtils.clamp(pitch, -90, 90);
+      velocity.current = { yaw: 0, pitch: 0 };
+      reported.current = { ...reported.current, yaw, pitch };
+    }
+    if (zoom !== reported.current.zoom && Math.round(t.zoom * 100) !== zoom) {
+      t.zoom = THREE.MathUtils.clamp(zoom / 100, MIN_ZOOM, MAX_ZOOM);
+      reported.current = { ...reported.current, zoom };
+      clampPan();
+    }
+    animate();
+  }, [yaw, pitch, zoom]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function clampPan() {
+    const t = target.current;
+    const limit = maxPan(t.zoom);
+    t.panX = THREE.MathUtils.clamp(t.panX, -limit, limit);
+    t.panY = THREE.MathUtils.clamp(t.panY, -limit, limit);
+  }
+
+  /** Zooms by a factor, keeping the point under the cursor (in -1..1 screen units) where it is. */
+  function zoomBy(factor: number, at = { x: 0, y: 0 }) {
+    const t = target.current;
+    const before = t.zoom;
+    t.zoom = THREE.MathUtils.clamp(t.zoom * factor, MIN_ZOOM, MAX_ZOOM);
+    const view = instance.current;
+    const aspect = view?.camera.aspect ?? 1;
+    t.panX += at.x * (halfHeight(before) - halfHeight(t.zoom)) * aspect;
+    t.panY += at.y * (halfHeight(before) - halfHeight(t.zoom));
+    clampPan();
+    setHint(false);
+    animate();
+  }
+
+  function reset() {
+    target.current.panX = 0;
+    target.current.panY = 0;
+    velocity.current = { yaw: 0, pitch: 0 };
+    if (props.onReset) props.onReset();
+    else Object.assign(target.current, { yaw: -13, pitch: 1, zoom: 1 });
+    animate();
+  }
+
+  function toggleSpin() {
+    spin.current = !spin.current;
+    setSpinning(spin.current);
+    velocity.current = { yaw: 0, pitch: 0 };
+    animate();
+  }
+
+  // The wheel zooms towards the cursor. React wheel listeners are passive, so this one is added by hand.
+  useEffect(() => {
+    const element = host.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const box = element.getBoundingClientRect();
+      const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+      zoomBy(Math.exp(-delta * (event.ctrlKey ? .01 : .0016)), {
+        x: ((event.clientX - box.left) / box.width) * 2 - 1,
+        y: -(((event.clientY - box.top) / box.height) * 2 - 1),
+      });
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  });
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(document.fullscreenElement === wrapper.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  function startGesture(event: React.PointerEvent) {
+    const list = [...pointers.current.values()];
+    const t = target.current;
+    if (list.length >= 2) {
+      const [a, b] = list as [{ x: number; y: number }, { x: number; y: number }];
+      gesture.current = { kind: "pinch", distance: Math.hypot(a.x - b.x, a.y - b.y) || 1, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, zoom: t.zoom, panX: t.panX, panY: t.panY };
+    } else if (event.button === 2 || event.button === 1 || event.shiftKey) {
+      gesture.current = { kind: "pan", x: event.clientX, y: event.clientY, panX: t.panX, panY: t.panY };
+    } else {
+      gesture.current = { kind: "orbit", x: event.clientX, y: event.clientY, yaw: t.yaw, pitch: t.pitch, last: { x: event.clientX, y: event.clientY, t: performance.now() } };
+    }
+  }
+
+  function snapshot() {
+    const view = instance.current;
+    if (!view) return;
+    view.renderer.render(view.scene, view.camera);
+    const link = document.createElement("a");
+    link.href = view.renderer.domElement.toDataURL("image/png");
+    link.download = `${(part === "unit" ? format : part).replace(/\W+/g, "-").toLowerCase()}-preview.png`;
+    link.click();
+  }
+
+  const zoomPercent = Math.round(zoom);
 
   return (
-    <div className="studio-model-canvas" ref={host} role="img" aria-label={`Rotatable ${part === "unit" ? format : part} preview`}
+    <div ref={wrapper} className="studio-3d" data-fullscreen={fullscreen}>
+    <div className="studio-model-canvas" ref={host} role="img" tabIndex={0}
+      aria-label={`Rotatable ${part === "unit" ? format : part} preview. Drag to rotate, scroll to zoom, right-drag to pan, double-click to reset. Arrow keys rotate, plus and minus zoom.`}
+      onContextMenu={(event) => event.preventDefault()}
+      onDoubleClick={reset}
+      onKeyDown={(event) => {
+        const t = target.current;
+        const handled = (() => {
+          switch (event.key) {
+            case "ArrowLeft": t.yaw -= 15; return true;
+            case "ArrowRight": t.yaw += 15; return true;
+            case "ArrowUp": t.pitch = Math.max(-90, t.pitch - 10); return true;
+            case "ArrowDown": t.pitch = Math.min(90, t.pitch + 10); return true;
+            case "+": case "=": zoomBy(1.2); return true;
+            case "-": case "_": zoomBy(1 / 1.2); return true;
+            case "0": reset(); return true;
+            case "r": case "R": toggleSpin(); return true;
+            default: return false;
+          }
+        })();
+        if (handled) {
+          event.preventDefault();
+          setHint(false);
+          animate();
+        }
+      }}
       onPointerDown={(event) => {
-        if (!props.onRotate || !event.isPrimary || event.button !== 0) return;
+        if (event.pointerType === "mouse" && event.button > 2) return;
         event.currentTarget.setPointerCapture(event.pointerId);
-        drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, yaw, pitch };
+        event.currentTarget.focus({ preventScroll: true });
+        pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        velocity.current = { yaw: 0, pitch: 0 };
+        if (spin.current) { spin.current = false; setSpinning(false); }
+        setHint(false);
+        startGesture(event);
+        animate();
       }}
       onPointerMove={(event) => {
-        const start = drag.current;
-        if (start?.id !== event.pointerId) return;
-        const angle = THREE.MathUtils.euclideanModulo(start.yaw + (event.clientX - start.x) * .6 + 180, 360) - 180;
-        props.onRotate?.(Math.round(angle), Math.round(THREE.MathUtils.clamp(start.pitch + (event.clientY - start.y) * .45, -90, 90)));
+        if (!pointers.current.has(event.pointerId)) return;
+        pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const g = gesture.current;
+        const t = target.current;
+        const box = event.currentTarget.getBoundingClientRect();
+        const unitsPerPixel = (2 * halfHeight(t.zoom)) / (box.height || 1);
+        if (g?.kind === "orbit") {
+          // Slower when zoomed in, so the label stays easy to follow.
+          const speed = .5 / Math.sqrt(t.zoom);
+          t.yaw = g.yaw + (event.clientX - g.x) * speed;
+          t.pitch = THREE.MathUtils.clamp(g.pitch + (event.clientY - g.y) * speed * .8, -90, 90);
+          const now = performance.now();
+          const frames = Math.max(.5, (now - g.last.t) / 16.67);
+          velocity.current = { yaw: (event.clientX - g.last.x) * speed / frames, pitch: (event.clientY - g.last.y) * speed * .8 / frames };
+          g.last = { x: event.clientX, y: event.clientY, t: now };
+        } else if (g?.kind === "pan") {
+          t.panX = g.panX - (event.clientX - g.x) * unitsPerPixel;
+          t.panY = g.panY + (event.clientY - g.y) * unitsPerPixel;
+          clampPan();
+        } else if (g?.kind === "pinch") {
+          const [a, b] = [...pointers.current.values()] as [{ x: number; y: number }, { x: number; y: number }];
+          t.zoom = THREE.MathUtils.clamp(g.zoom * Math.hypot(a.x - b.x, a.y - b.y) / g.distance, MIN_ZOOM, MAX_ZOOM);
+          t.panX = g.panX - ((a.x + b.x) / 2 - g.mid.x) * unitsPerPixel;
+          t.panY = g.panY + ((a.y + b.y) / 2 - g.mid.y) * unitsPerPixel;
+          clampPan();
+        }
+        animate();
       }}
-      onLostPointerCapture={() => { drag.current = null; }}>
+      onPointerUp={(event) => {
+        pointers.current.delete(event.pointerId);
+        const g = gesture.current;
+        // A flick keeps turning; a drag that stopped before release does not.
+        if (g?.kind === "orbit" && performance.now() - g.last.t > 80) velocity.current = { yaw: 0, pitch: 0 };
+        if (g?.kind !== "orbit") velocity.current = { yaw: 0, pitch: 0 };
+        gesture.current = null;
+        if (pointers.current.size === 1) startGesture(event);
+        animate();
+      }}
+      onPointerCancel={(event) => {
+        pointers.current.delete(event.pointerId);
+        gesture.current = null;
+      }}>
       {!available && <p className="p-6 text-sm text-mid">3D is unavailable in this browser. Use the flat label or product reference.</p>}
       {available && referenceModel && referenceFailed && <p className="p-3 text-xs text-mid">Reference model unavailable. Showing editable artwork.</p>}
+    </div>
+    {available && (<>
+      {hint && (
+        <p className="studio-3d-hint" aria-hidden="true">
+          Drag to rotate · Scroll or pinch to zoom · Right-drag to pan · Double-click to reset
+        </p>
+      )}
+      <div className="studio-3d-tools" role="toolbar" aria-label="3D view">
+        <button type="button" onClick={() => zoomBy(1 / 1.25)} disabled={zoomPercent <= MIN_ZOOM * 100} aria-label="Zoom out" title="Zoom out (−)">−</button>
+        <button type="button" className="studio-3d-zoom" onClick={() => { target.current.zoom = 1; clampPan(); animate(); }} title="Zoom to 100%">{zoomPercent}%</button>
+        <button type="button" onClick={() => zoomBy(1.25)} disabled={zoomPercent >= MAX_ZOOM * 100} aria-label="Zoom in" title="Zoom in (+)">+</button>
+        <span className="studio-3d-sep" />
+        <button type="button" onClick={reset} title="Reset view (0 or double-click)" aria-label="Reset view">⟲</button>
+        <button type="button" onClick={toggleSpin} aria-pressed={spinning} title="Turntable (R)" aria-label="Turntable">{spinning ? "❚❚" : "▶"}</button>
+        <button type="button" onClick={() => (fullscreen ? document.exitFullscreen() : wrapper.current?.requestFullscreen())?.catch(() => {})}
+          title={fullscreen ? "Exit full screen" : "Full screen"} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>{fullscreen ? "⤡" : "⤢"}</button>
+        <button type="button" onClick={snapshot} title="Save a PNG of this view" aria-label="Save image">⤓</button>
+      </div>
+    </>)}
     </div>
   );
 }

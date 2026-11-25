@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { DesignEditor } from "@/components/studio/DesignEditor";
 import { Loading } from "@/components/studio/Loading";
@@ -22,8 +23,9 @@ async function Design({ params }: { params: PageProps<"/studio/designs/[id]">["p
   const { design } = await apiGet<{ design: DesignDetail }>(`/designs/${encodeURIComponent(id)}`);
 
   return (
-    <div className="grid gap-6">
+    <div className="studio-wide grid gap-4">
       <div>
+        <Link href="/studio/designs" className="studio-back">← My designs</Link>
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-4xl">{design.name}</h1>
           <StatusBadge status={design.status} />
