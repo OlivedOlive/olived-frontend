@@ -43,11 +43,27 @@ export const PARTS: { id: PackagePart; name: string }[] = [
 const PHOTOS = { sun, grove, organic, oussoul };
 const WRAP: PanelFace[] = ["back", "front", "right"];
 type PreviewView = "flat" | "3d" | "reference" | "photo";
+/** Named camera positions: the model's turn that brings each side to the camera. */
+const VIEWS: [string, number][] = [["Front", 0], ["Left side", 90], ["Right side", -90], ["Back", 180], ["Three-quarter", -35]];
 type ProductTemplate = Parameters<typeof getPackaging>[0];
 type ArtworkCanvases = Partial<Record<PanelFace, HTMLCanvasElement>>;
 
+const FLAT_ZOOMS = [1, 1.25, 1.5, 2, 2.5, 3];
+/** The next zoom step up or down. */
+function step(zoom: number, direction: 1 | -1) {
+  const index = FLAT_ZOOMS.findIndex((v) => v >= zoom - .01);
+  return FLAT_ZOOMS[Math.max(0, Math.min(FLAT_ZOOMS.length - 1, (index < 0 ? FLAT_ZOOMS.length - 1 : index) + direction))]!;
+}
+
+/**
+ * The flat label with its own zoom: bigger buttons, 100% to fit, full screen and a PNG download. Zoomed in,
+ * the label scrolls inside the frame (drag the scroll bars or use the wheel).
+ */
 function FlatArtwork({ sources, faces }: { sources: ArtworkCanvases; faces: PanelFace[] }) {
   const target = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false);
   const width = faces.length > 1 ? WRAP_PANEL_WIDTH * faces.length : sources[faces[0]]?.width ?? LABEL_SIZE;
   useEffect(() => {
     const context = target.current?.getContext("2d");
@@ -57,13 +73,57 @@ function FlatArtwork({ sources, faces }: { sources: ArtworkCanvases; faces: Pane
       if (panel) context?.drawImage(panel, panel.width * index, 0);
     });
   }, [faces, sources, width]);
-  return <canvas className="studio-label-canvas" ref={target} width={width} height={LABEL_SIZE}
-    role="img" aria-label={faces.length > 1 ? "Editable wrap label with product information, front artwork and nutrition" : `Editable ${faces[0]} label`} />;
+  useEffect(() => {
+    const onChange = () => setFullscreen(document.fullscreenElement === frame.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  // Ctrl + wheel zooms, like in other design tools; the plain wheel keeps scrolling.
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      setZoom((z) => step(z, event.deltaY < 0 ? 1 : -1));
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, []);
+  function download() {
+    const canvas = target.current;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = "label-artwork.png";
+    link.click();
+  }
+  return (
+    <div ref={frame} className="studio-flat" data-zoomed={zoom > 1} data-fullscreen={fullscreen}>
+      <div className="studio-flat-scroll">
+        <canvas className="studio-label-canvas" ref={target} width={width} height={LABEL_SIZE}
+          style={{ width: fullscreen ? `min(${zoom * 92}vw, ${zoom * 88}vh * ${width / LABEL_SIZE})` : `calc(min(100%, 26rem) * ${zoom})`, maxWidth: "none" }}
+          role="img" aria-label={faces.length > 1 ? "Editable wrap label with product information, front artwork and nutrition" : `Editable ${faces[0]} label`} />
+      </div>
+      <div className="studio-3d-tools" role="toolbar" aria-label="Label size">
+        <button type="button" onClick={() => setZoom((z) => step(z, -1))} disabled={zoom <= FLAT_ZOOMS[0]!} aria-label="Smaller" title="Smaller">−</button>
+        <button type="button" className="studio-3d-zoom" onClick={() => setZoom(1)} title="Back to 100%">{Math.round(zoom * 100)}%</button>
+        <button type="button" onClick={() => setZoom((z) => step(z, 1))} disabled={zoom >= FLAT_ZOOMS.at(-1)!} aria-label="Bigger" title="Bigger (Ctrl + wheel)">+</button>
+        <span className="studio-3d-sep" />
+        <button type="button" onClick={() => (fullscreen ? document.exitFullscreen() : frame.current?.requestFullscreen())?.catch(() => {})}
+          title={fullscreen ? "Exit full screen" : "Full screen"} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>{fullscreen ? "⤡" : "⤢"}</button>
+        <button type="button" onClick={download} title="Save the label as a PNG" aria-label="Save image">⤓</button>
+      </div>
+    </div>
+  );
 }
 
 export function PackagingPreview({
-  content, template, part, face, onFace, marketCode, initialView = "flat",
+  content, template, part, face, onFace, marketCode, initialView = "flat", initialYaw = -13, title,
 }: {
+  /** The angle the 3D view starts at: 0 faces the front, 90 the left side, -90 the right side. */
+  initialYaw?: number;
+  title?: string;
   content: DesignContent;
   template: ProductTemplate;
   part: PackagePart;
@@ -73,8 +133,8 @@ export function PackagingPreview({
   initialView?: PreviewView;
 }) {
   const [view, setView] = useState<PreviewView>(initialView);
-  const [yaw, setYaw] = useState(-13);
-  const [pitch, setPitch] = useState(1);
+  const [yaw, setYaw] = useState(initialYaw);
+  const [pitch, setPitch] = useState(0);
   const [zoom, setZoom] = useState(100);
   const [showOriginal, setShowOriginal] = useState(initialView === "3d");
   const [artwork, setArtwork] = useState<ArtworkCanvases>({});
@@ -110,7 +170,7 @@ export function PackagingPreview({
   return (
     <section className="studio-preview card grid gap-4">
       <div>
-        <h2 className="text-3xl">{part === "unit" ? `${format} · ${volume} mL` : PARTS.find((item) => item.id === part)?.name}</h2>
+        <h2 className="text-3xl">{title ?? (part === "unit" ? `${format} · ${volume} mL` : PARTS.find((item) => item.id === part)?.name)}</h2>
         <div className="studio-segment mt-2 flex-wrap" aria-label="Preview mode">
           <button type="button" aria-pressed={activeView === "flat"} onClick={() => setView("flat")}>Flat artwork</button>
           <button type="button" aria-pressed={activeView === "3d"} onClick={() => setView("3d")}>3D preview</button>
@@ -120,14 +180,15 @@ export function PackagingPreview({
       </div>
       <div className="studio-stage studio-label-stage">
         {activeView === "flat" && (
-          <FlatArtwork sources={artwork} faces={part === "unit" && WRAP.includes(face) ? WRAP : [face]} />
+          <FlatArtwork sources={artwork} faces={part === "unit" ? WRAP : [face]} />
         )}
         {activeView === "3d" && (
           <ModelPreviewBoundary key={modelKey} onShowArtwork={() => setView("flat")}>
           <BottleScene format={format} volume={volume} part={part} artwork={artwork}
             offset={content.artwork?.labelFit?.offset ?? 7} labelHeight={content.artwork?.labelFit?.height ?? 84}
             yaw={yaw} pitch={pitch} zoom={zoom} referenceModel={showReference} useOriginalArtwork={showReference}
-            onRotate={(horizontal, vertical) => { setYaw(horizontal); setPitch(vertical); }} />
+            onRotate={(horizontal, vertical) => { setYaw(horizontal); setPitch(vertical); }}
+            onZoom={setZoom} onReset={() => { setYaw(initialYaw); setPitch(0); setZoom(100); }} />
           </ModelPreviewBoundary>
         )}
         {activeView === "reference" && ref && (
@@ -137,11 +198,11 @@ export function PackagingPreview({
           <Image src={photo} alt="Photograph of the original brand packaging" className="h-auto max-h-[440px] w-auto max-w-full object-contain" />
         )}
       </div>
-      {activeView === "flat" && (
+      {activeView === "flat" && part !== "unit" && (
         <div className="studio-segment flex-wrap" aria-label="Packaging face">
-          {(part === "unit" ? ["back", "front", "right", "left", "top", "bottom"] as PanelFace[] : FACES).map((side) => (
+          {FACES.map((side) => (
             <button key={side} type="button" className="capitalize" aria-pressed={face === side} onClick={() => onFace(side)}>
-              {part === "unit" && side === "right" ? "Nutrition" : part === "unit" && side === "back" ? "Product information" : side}
+              {side}
             </button>
           ))}
         </div>
@@ -154,27 +215,13 @@ export function PackagingPreview({
               <button type="button" aria-pressed={!showOriginal} onClick={() => setShowOriginal(false)}>Live artwork</button>
             </div>
           )}
-          <label className="field">Horizontal rotation <input type="range" min="-180" max="180" value={yaw} onChange={(e) => setYaw(Number(e.target.value))} /></label>
-          <label className="field">Vertical rotation <input type="range" min="-90" max="90" value={pitch} onChange={(e) => setPitch(Number(e.target.value))} /></label>
-          {(glass || showReference) && (
-            <div className="studio-segment flex-wrap sm:col-span-2" aria-label="Camera positions">
-              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
-                <button key={angle} type="button" onClick={() => { setYaw(angle <= 180 ? -angle : 360 - angle); setPitch(0); }}>{angle}°</button>
+          <div className="studio-segment flex-wrap sm:col-span-2" aria-label="Camera positions">
+              {VIEWS.map(([name, angle]) => (
+                <button key={name} type="button" aria-pressed={yaw === angle && Math.abs(pitch) <= 1} onClick={() => { setYaw(angle); setPitch(0); }}>{name}</button>
               ))}
               <button type="button" onClick={() => { setYaw(0); setPitch(90); }}>Top</button>
               <button type="button" onClick={() => { setYaw(0); setPitch(-90); }}>Bottom</button>
             </div>
-          )}
-          <div className="flex flex-wrap items-end gap-2 sm:col-span-2">
-            <label className="field min-w-32 flex-1">Zoom · {zoom}%
-              <input type="range" min="65" max="220" step="5" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} />
-            </label>
-            <div className="studio-segment">
-              <button type="button" aria-label="Zoom out" disabled={zoom <= 65} onClick={() => setZoom((value) => Math.max(65, value - 15))}>−</button>
-              <button type="button" aria-label="Zoom in" disabled={zoom >= 220} onClick={() => setZoom((value) => Math.min(220, value + 15))}>+</button>
-              <button type="button" onClick={() => { setYaw(-13); setPitch(1); setZoom(100); }}>Reset view</button>
-            </div>
-          </div>
         </div>
       )}
       <p className="text-xs text-mid">
