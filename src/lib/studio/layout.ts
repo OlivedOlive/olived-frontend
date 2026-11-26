@@ -1,3 +1,4 @@
+import { drawBarcode, moduleFor, readBarcode, symbolHeight, symbolModules } from "./barcode";
 import { fontFamily, loadFonts } from "./fonts";
 import { getArtworkLogo, LABEL_SIZE, TEMPLATE_TEXT_SIZE } from "./label-artwork";
 import type { DesignContent, PanelFace, Template } from "./types";
@@ -41,6 +42,9 @@ export type LabelElement = {
   padding?: number;
   shape?: "rect" | "ellipse" | "line";
   src?: string;
+  /** Barcodes: bar height in millimetres (half the GS1 height when unset), and how the digits are set. */
+  barHeight?: number;
+  barcodeStyle?: "gs1" | "simple";
 };
 
 export type Layout = { elements: LabelElement[]; backgrounds?: Partial<Record<"back" | "front" | "right", string>> };
@@ -101,10 +105,19 @@ function wrapLines(ctx: CanvasRenderingContext2D, e: LabelElement, text: string,
 
 const lineStep = (e: LabelElement) => (e.size ?? 9) * PT * (e.lineHeight ?? 1.22);
 
+/** The barcode a block prints: the barcode field holding a valid EAN-13, UPC-A or EAN-8 number. */
+export function barcodeOf(e: LabelElement, content: DesignContent) {
+  if (e.type !== "field" || e.field !== "barcode") return null;
+  const status = readBarcode(content.fields.barcode ?? "");
+  return status.ok ? status.barcode : null;
+}
+
 /** The height a text or field element needs for its content at its width, in millimetres. */
 export function textHeight(e: LabelElement, content: DesignContent) {
   const text = elementText(e, content);
   const pad = e.padding ?? 0;
+  const barcode = barcodeOf(e, content);
+  if (barcode) return symbolHeight(barcode, moduleFor(barcode, e.w - pad * 2), e.barHeight) + pad * 2;
   if (e.table) {
     const ctx = measure();
     let total = 0;
@@ -327,7 +340,17 @@ function drawElement(ctx: CanvasRenderingContext2D, e: LabelElement, content: De
       ctx.drawImage(image, (w - iw) / 2, (h - ih) / 2, iw, ih);
     }
   }
-  if (e.type === "text" || e.type === "field") drawText(ctx, e, content, s);
+  const barcode = barcodeOf(e, content);
+  if (barcode) {
+    // The number becomes bars and digits, centred in the block, sized by the block's width.
+    const pad = e.padding ?? 0;
+    const moduleMm = moduleFor(barcode, e.w - pad * 2);
+    const width = symbolModules(barcode) * moduleMm;
+    // Scanners need dark bars on a light ground, whatever the label colour.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect((pad + (e.w - pad * 2 - width) / 2) * s, pad * s, width * s, symbolHeight(barcode, moduleMm, e.barHeight) * s);
+    drawBarcode(ctx, barcode, (pad + (e.w - pad * 2 - width) / 2) * s, pad * s, moduleMm, s, fontFamily("inter"), "#000000", e.barHeight, e.barcodeStyle);
+  } else if (e.type === "text" || e.type === "field") drawText(ctx, e, content, s);
   ctx.restore();
 }
 
@@ -361,4 +384,54 @@ export async function renderWrapFaces(content: DesignContent, layout: Layout, si
 /** The design's own layout, or the market template's when it has none yet. */
 export function layoutOf(content: DesignContent, template: Template & { variant?: { product: { slug: string } } }, line: string): Layout {
   return (content.artwork?.layout?.unit as Layout | undefined) ?? templateLayout(content, template, line);
+}
+
+/** Two blocks overlap, with a little breathing room. */
+const overlaps = (a: LabelElement, b: LabelElement, gap = .6) =>
+  a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+
+/**
+ * Puts fields back on the label, where the market template places them: same panel, position and style.
+ * When that spot is taken, the block goes under the lowest block of its panel instead, so nothing is
+ * covered. Fields the template does not place go on the given panel (0 left side, 1 front, 2 right side).
+ */
+export function placeFields(
+  layout: Layout, content: DesignContent, template: Template & { variant?: { product: { slug: string } } }, line: string,
+  fields: { key: string; label?: string }[], fallbackPanel: (key: string) => 0 | 1 | 2,
+): { layout: Layout; placed: string[] } {
+  const { width, height } = labelSize(template);
+  const third = width / 3;
+  const reference = templateLayout(content, template, line);
+  const elements = [...layout.elements];
+  const placed: string[] = [];
+  for (const { key, label } of fields) {
+    if (elements.some((e) => e.field === key && !e.hidden)) continue;
+    // A hidden block of the field is simply shown again.
+    const hidden = elements.findIndex((e) => e.field === key);
+    if (hidden >= 0) {
+      elements[hidden] = { ...elements[hidden]!, hidden: false };
+      placed.push(elements[hidden]!.id);
+      continue;
+    }
+    const model = reference.elements.find((e) => e.field === key);
+    const panel = model ? Math.min(2, Math.floor((model.x + model.w / 2) / third)) : fallbackPanel(key);
+    const margin = third * .07;
+    let block: LabelElement = model
+      ? { ...model, id: newId() }
+      : {
+        id: newId(), type: "field", field: key, name: label, x: panel * third + margin, y: height * .1, w: third - margin * 2, h: 5,
+        font: "roboto-condensed", size: Math.round(third * TEMPLATE_TEXT_SIZE / 100 / PT * 10) / 10, color: inkFor(content, line), lineHeight: 1.2,
+        ...(key === "nutrition" ? { table: true } : {}),
+      };
+    block = { ...block, h: Math.max(2, textHeight(block, content)) };
+    const sameSide = elements.filter((e) => !e.hidden && Math.min(2, Math.floor((e.x + e.w / 2) / third)) === panel);
+    if (sameSide.some((e) => overlaps(block, e))) {
+      const bottom = Math.max(height * .05, ...sameSide.map((e) => e.y + e.h));
+      block = { ...block, x: panel * third + margin, w: third - margin * 2, y: Math.round((bottom + 1.2) * 20) / 20 };
+      block = { ...block, h: Math.max(2, textHeight(block, content)) };
+    }
+    elements.push(block);
+    placed.push(block.id);
+  }
+  return { layout: { ...layout, elements }, placed };
 }

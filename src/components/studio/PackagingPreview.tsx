@@ -2,13 +2,13 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Component, type ReactNode, useEffect, useRef, useState } from "react";
+import { Component, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import sun from "@/assets/images/orzeta-sun.webp";
 import grove from "@/assets/images/orzeta-grove.webp";
 import organic from "@/assets/images/orzeta-organic.webp";
 import oussoul from "@/assets/images/studio/oussoul.webp";
 import { glassModelFor } from "@/lib/studio/bottle-models";
-import { labelSize, layoutOf, renderWrapFaces } from "@/lib/studio/layout";
+import { labelSize, layoutOf, prepare, renderLabel, renderWrapFaces } from "@/lib/studio/layout";
 import { drawLabel, FACES, getArtworkLogo, getLabelReference, getPackaging, loadArtworkLogo, LABEL_SIZE, WRAP_PANEL_WIDTH } from "@/lib/studio/label-artwork";
 import type { DesignContent, PackagePart, PanelFace } from "@/lib/studio/types";
 
@@ -55,24 +55,76 @@ function step(zoom: number, direction: 1 | -1) {
   return FLAT_ZOOMS[Math.max(0, Math.min(FLAT_ZOOMS.length - 1, (index < 0 ? FLAT_ZOOMS.length - 1 : index) + direction))]!;
 }
 
+/** The largest canvas side the flat view draws on screen, to keep memory in check. */
+const MAX_SCREEN_PX = 4096;
+/** Downloads: long side in pixels, or a print resolution. */
+const EXPORTS = [
+  { id: "2k", label: "PNG · 2K", note: "2048 px", longSide: 2048 },
+  { id: "4k", label: "PNG · 4K", note: "3840 px", longSide: 3840 },
+  { id: "print", label: "Print · 300 dpi", note: "", dpi: 300 },
+] as const;
+
 /**
- * The flat label with its own zoom: bigger buttons, 100% to fit, full screen and a PNG download. Zoomed in,
- * the label scrolls inside the frame (drag the scroll bars or use the wheel).
+ * The flat label with its own zoom: bigger buttons, 100% to fit, full screen and downloads. With `render`
+ * (the unit label, drawn from its layout), the label is redrawn sharp at the size it is shown and exported
+ * at 2K, 4K or 300 dpi. Without it, the preview images are shown as they are.
  */
-function FlatArtwork({ sources, faces }: { sources: ArtworkCanvases; faces: PanelFace[] }) {
+function FlatArtwork({ sources, faces, render, labelMm }: {
+  sources: ArtworkCanvases;
+  faces: PanelFace[];
+  render?: (pxPerMm: number) => Promise<HTMLCanvasElement>;
+  labelMm?: { width: number; height: number };
+}) {
   const target = useRef<HTMLCanvasElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const width = faces.length > 1 ? WRAP_PANEL_WIDTH * faces.length : sources[faces[0]]?.width ?? LABEL_SIZE;
+  const [exportMenu, setExportMenu] = useState(false);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [shownPx, setShownPx] = useState(0);
+  const sharp = Boolean(render && labelMm);
+  const width = sharp ? Math.round(LABEL_SIZE * labelMm!.width / labelMm!.height)
+    : faces.length > 1 ? WRAP_PANEL_WIDTH * faces.length : sources[faces[0]]?.width ?? LABEL_SIZE;
+
+  // Preview images (boxes, cases, older designs).
   useEffect(() => {
-    const context = target.current?.getContext("2d");
-    context?.clearRect(0, 0, width, LABEL_SIZE);
+    if (sharp) return;
+    const canvas = target.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    canvas.width = width;
+    canvas.height = LABEL_SIZE;
+    context.clearRect(0, 0, width, LABEL_SIZE);
     faces.forEach((face, index) => {
       const panel = sources[face];
-      if (panel) context?.drawImage(panel, panel.width * index, 0);
+      if (panel) context.drawImage(panel, panel.width * index, 0);
     });
-  }, [faces, sources, width]);
+  }, [faces, sources, width, sharp]);
+
+  // The unit label, redrawn for the pixels it covers on this screen at this zoom.
+  useEffect(() => {
+    const canvas = target.current;
+    if (!render || !labelMm || !canvas) return;
+    let current = true;
+    const draw = () => {
+      const shown = canvas.getBoundingClientRect().width || 416;
+      const ratio = window.devicePixelRatio || 1;
+      const pxPerMm = Math.min((shown * ratio) / labelMm.width, MAX_SCREEN_PX / Math.max(labelMm.width, labelMm.height));
+      void render(pxPerMm).then((drawn) => {
+        if (!current) return;
+        canvas.width = drawn.width;
+        canvas.height = drawn.height;
+        canvas.getContext("2d")?.drawImage(drawn, 0, 0);
+        setShownPx(drawn.width);
+      });
+    };
+    // One redraw after typing, zooming or resizing settles.
+    let timer = setTimeout(draw, 150);
+    const observer = new ResizeObserver(() => { clearTimeout(timer); timer = setTimeout(draw, 150); });
+    observer.observe(canvas);
+    return () => { current = false; clearTimeout(timer); observer.disconnect(); };
+  }, [render, labelMm, zoom, fullscreen]);
+
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement === frame.current);
     document.addEventListener("fullscreenchange", onChange);
@@ -90,30 +142,68 @@ function FlatArtwork({ sources, faces }: { sources: ArtworkCanvases; faces: Pane
     element.addEventListener("wheel", onWheel, { passive: false });
     return () => element.removeEventListener("wheel", onWheel);
   }, []);
-  function download() {
-    const canvas = target.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = "label-artwork.png";
-    link.click();
+
+  function save(canvas: HTMLCanvasElement, name: string) {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = name;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+    }, "image/png");
   }
+
+  async function download(id: (typeof EXPORTS)[number]["id"]) {
+    setExportMenu(false);
+    if (!render || !labelMm) {
+      if (target.current) save(target.current, "label-artwork.png");
+      return;
+    }
+    const choice = EXPORTS.find((e) => e.id === id)!;
+    const pxPerMm = "dpi" in choice ? choice.dpi / 25.4 : choice.longSide / Math.max(labelMm.width, labelMm.height);
+    setExporting(choice.label);
+    try {
+      const canvas = await render(pxPerMm);
+      save(canvas, `label-artwork-${id}-${canvas.width}x${canvas.height}.png`);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  const printSize = labelMm && { w: Math.round(labelMm.width * 300 / 25.4), h: Math.round(labelMm.height * 300 / 25.4) };
+
   return (
     <div ref={frame} className="studio-flat" data-zoomed={zoom > 1} data-fullscreen={fullscreen}>
       <div className="studio-flat-scroll">
         <canvas className="studio-label-canvas" ref={target} width={width} height={LABEL_SIZE}
-          style={{ width: fullscreen ? `min(${zoom * 92}vw, ${zoom * 88}vh * ${width / LABEL_SIZE})` : `calc(min(100%, 26rem) * ${zoom})`, maxWidth: "none" }}
+          style={{
+            width: fullscreen ? `min(${zoom * 92}vw, ${zoom * 88}vh * ${width / LABEL_SIZE})` : `calc(min(100%, 26rem) * ${zoom})`,
+            maxWidth: "none", aspectRatio: `${width} / ${LABEL_SIZE}`, height: "auto",
+          }}
           role="img" aria-label={faces.length > 1 ? "Editable wrap label with product information, front artwork and nutrition" : `Editable ${faces[0]} label`} />
       </div>
+      {exporting && <p className="studio-flat-busy" role="status">Preparing {exporting}…</p>}
       <div className="studio-3d-tools" role="toolbar" aria-label="Label size">
         <button type="button" onClick={() => setZoom((z) => step(z, -1))} disabled={zoom <= FLAT_ZOOMS[0]!} aria-label="Smaller" title="Smaller">−</button>
-        <button type="button" className="studio-3d-zoom" onClick={() => setZoom(1)} title="Back to 100%">{Math.round(zoom * 100)}%</button>
+        <button type="button" className="studio-3d-zoom" onClick={() => setZoom(1)} title={sharp && shownPx ? `Back to 100% · drawn at ${shownPx} px wide` : "Back to 100%"}>{Math.round(zoom * 100)}%</button>
         <button type="button" onClick={() => setZoom((z) => step(z, 1))} disabled={zoom >= FLAT_ZOOMS.at(-1)!} aria-label="Bigger" title="Bigger (Ctrl + wheel)">+</button>
         <span className="studio-3d-sep" />
         <button type="button" onClick={() => (fullscreen ? document.exitFullscreen() : frame.current?.requestFullscreen())?.catch(() => {})}
           title={fullscreen ? "Exit full screen" : "Full screen"} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>{fullscreen ? "⤡" : "⤢"}</button>
-        <button type="button" onClick={download} title="Save the label as a PNG" aria-label="Save image">⤓</button>
+        <button type="button" onClick={() => (sharp ? setExportMenu((v) => !v) : void download("2k"))} aria-expanded={sharp ? exportMenu : undefined}
+          title="Save the label as a PNG" aria-label="Save image" disabled={Boolean(exporting)}>⤓</button>
       </div>
+      {exportMenu && (
+        <div className="studio-export" role="menu" aria-label="Download size">
+          {EXPORTS.map((choice) => (
+            <button key={choice.id} type="button" role="menuitem" onClick={() => void download(choice.id)}>
+              <span>{choice.label}</span>
+              <span className="text-xs text-mid">{choice.id === "print" && printSize ? `${printSize.w} × ${printSize.h} px` : choice.note}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -155,6 +245,12 @@ export function PackagingPreview({
   // The unit label's wrap is drawn from its element layout, exactly as in the editor. Designs that still
   // carry text panels from before the editor keep them until they are arranged in the editor.
   const legacyPanels = !content.artwork?.layout?.unit && Object.keys(content.artwork?.panels?.unit ?? {}).length > 0;
+  const size = useMemo(() => labelSize(template), [template]);
+  // The unit label drawn from its layout at any resolution, for the sharp flat view and the downloads.
+  const renderSharp = useCallback(async (pxPerMm: number) => {
+    const layout = layoutOf(content, template, line);
+    return renderLabel(document.createElement("canvas"), content, layout, size, pxPerMm, await prepare(layout));
+  }, [content, template, line, size]);
   useEffect(() => {
     let current = true;
     const timer = setTimeout(() => {
@@ -180,7 +276,8 @@ export function PackagingPreview({
       </div>
       <div className="studio-stage studio-label-stage">
         {activeView === "flat" && (
-          <FlatArtwork sources={artwork} faces={part === "unit" ? WRAP : [face]} />
+          <FlatArtwork sources={artwork} faces={part === "unit" ? WRAP : [face]}
+            render={part === "unit" && !legacyPanels ? renderSharp : undefined} labelMm={part === "unit" && !legacyPanels ? size : undefined} />
         )}
         {activeView === "3d" && (
           <ModelPreviewBoundary key={modelKey} onShowArtwork={() => setView("flat")}>

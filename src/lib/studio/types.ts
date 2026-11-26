@@ -49,7 +49,14 @@ export type Artwork = {
 };
 
 export type Issue = { field: string; message: string; severity?: "warning" };
-export type CheckResult = { label: string; status: "pass" | "error" | "warning" | "unverified"; message: string; field?: string };
+export type CheckResult = {
+  label: string;
+  status: "pass" | "error" | "warning" | "unverified";
+  message: string;
+  field?: string;
+  /** "notPlaced": the field has its text but no block on the label. */
+  code?: "notPlaced";
+};
 export type RequiredField = { key: string; label: string };
 
 type TemplateWithProduct = Template & { variant: Variant & { product: Product } };

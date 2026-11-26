@@ -49,7 +49,7 @@ export function DesignFilters({ view, counts, markets }: {
       <nav className="admin-chips" aria-label="Filter designs by status">
         {DESIGN_VIEWS.map((item) => (
           <Link key={item.id} href={hrefWith({ show: item.id })} scroll={false} replace className="admin-chip"
-            aria-current={view === item.id ? "true" : undefined} data-tone={item.id}>
+            aria-current={view === item.id ? "true" : undefined} data-tone={item.id} data-empty={counts[item.id] === 0}>
             {item.label}<span>{counts[item.id]}</span>
           </Link>
         ))}

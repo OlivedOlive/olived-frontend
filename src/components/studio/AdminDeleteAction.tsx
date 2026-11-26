@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { postJson } from "@/lib/studio/post";
 
-export function AdminDeleteAction({ id, type, name }: { id: string; type: "user" | "design"; name: string }) {
+export function AdminDeleteAction({ id, type, name, redirectTo }: {
+  id: string;
+  type: "user" | "design";
+  name: string;
+  /** Where to go once it is deleted, when the current page shows only this item. */
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -19,7 +25,8 @@ export function AdminDeleteAction({ id, type, name }: { id: string; type: "user"
       setBusy(false);
       return;
     }
-    router.refresh();
+    if (redirectTo) router.push(redirectTo);
+    else router.refresh();
   }
 
   if (!confirm) return <button type="button" className="justify-self-start text-sm font-medium text-danger underline"
