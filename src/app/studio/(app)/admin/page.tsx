@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AdminDeleteAction } from "@/components/studio/AdminDeleteAction";
+import type { AdminDesign as AdminDesignFull } from "@/components/studio/AdminDesignCard";
+import { LabelThumb } from "@/components/studio/LabelThumb";
 import { AdminUsers } from "@/components/studio/AdminUsers";
 import { DesignFilters } from "@/components/studio/DesignFilters";
-import { ReviewPreview } from "@/components/studio/PackagingPreview";
 import { Loading } from "@/components/studio/Loading";
-import { ReviewActions } from "@/components/studio/ReviewActions";
 import { PAGE_MAX, ShowMore, shownCount } from "@/components/studio/ShowMore";
 import { StatusBadge } from "@/components/studio/StatusBadge";
-import { ValidateDesignButton } from "@/components/studio/ValidateDesignButton";
 import { apiGet } from "@/lib/studio/api";
 import { DESIGN_VIEWS, type DesignView } from "@/lib/studio/design-views";
-import type { DesignStatus, ReviewDesign, Role } from "@/lib/studio/types";
+import type { DesignStatus, Role } from "@/lib/studio/types";
 
-type AdminDesign = ReviewDesign & { createdBy: { name: string; email: string } };
+type AdminDesign = AdminDesignFull;
 type Query = Awaited<PageProps<"/studio/admin">["searchParams"]>;
 type DesignPage = { designs: AdminDesign[]; total: number };
 type StatusCounts = Record<DesignStatus, number>;
@@ -185,10 +183,13 @@ async function DesignsTab({ overview, query }: { overview: Overview; query: Quer
     if (typeof value === "string" && value.trim()) filter.set(key, value.trim().slice(0, 160));
   }
   const suffix = filter.size ? `&${filter}` : "";
-  const [submitted, ...paged] = await Promise.all([
+  const [submitted, everything, ...paged] = await Promise.all([
     apiGet<DesignPage>(`/admin/designs?status=SUBMITTED&take=${PAGE_MAX}${suffix}`),
+    view === "all"
+      ? apiGet<DesignPage>(`/admin/designs?take=${shownCount(query, "list", 24)}${suffix}`)
+      : Promise.resolve({ designs: [], total: 0 }),
     ...PAGED_GROUPS.map((group) =>
-      apiGet<DesignPage>(`/admin/designs?status=${group.status}&take=${shownCount(query, group.param)}${suffix}`),
+      apiGet<DesignPage>(`/admin/designs?status=${group.status}&take=${view === group.param ? shownCount(query, group.param, 24) : 1}${suffix}`),
     ),
   ]);
   const passed = (design: AdminDesign) => design.versions[0]?.validationResults[0]?.passed;
@@ -203,8 +204,22 @@ async function DesignsTab({ overview, query }: { overview: Overview; query: Quer
     approved: totals.approved!,
     drafts: totals.drafts!,
   };
-  const shows = (id: DesignView) => view === "all" || view === id;
   const filtered = view !== "all" || filter.size > 0;
+  // The open view: one grid of tiles, with its own "Show more".
+  const group = PAGED_GROUPS.find((g) => g.param === view);
+  const open = view === "all" ? { designs: everything.designs, total: everything.total, param: "list" }
+    : view === "review" ? { designs: ready, total: ready.length, param: "" }
+    : view === "checking" ? { designs: awaiting, total: counts.checking, param: "" }
+    : { designs: paged[PAGED_GROUPS.indexOf(group!)]!.designs, total: paged[PAGED_GROUPS.indexOf(group!)]!.total, param: group!.param };
+  const heading = DESIGN_VIEWS.find((v) => v.id === view)!.label;
+  const hint: Record<DesignView, string> = {
+    all: "Every design, newest change first. Click a design to open it.",
+    review: "Submitted and the checklist is complete: waiting for your decision.",
+    checking: "Submitted, but the checklist has not run or is not complete yet.",
+    changes: "Sent back to the client with your message.",
+    approved: "Approved for printing.",
+    drafts: "The client has not submitted these yet.",
+  };
   const checks = designs.checks.passed + designs.checks.failed;
   const decided = designs.decisionsThisMonth.APPROVED + designs.decisionsThisMonth.CHANGES_REQUESTED;
 
@@ -218,7 +233,7 @@ async function DesignsTab({ overview, query }: { overview: Overview; query: Quer
             <ul className="admin-list">
               {[...ready, ...awaiting].slice(0, 8).map((design) => (
                 <li key={design.id}>
-                  <a href={`#design-${design.id}`}>
+                  <a href={`/studio/admin/designs/${design.id}`}>
                     <span className="truncate font-medium">{design.name}</span>
                     <span className="truncate text-xs text-mid">{design.organization.name} · {design.market.name}</span>
                   </a>
@@ -245,88 +260,69 @@ async function DesignsTab({ overview, query }: { overview: Overview; query: Quer
         </Box>
       </div>
 
-      <div id="design-list" className="grid scroll-mt-24 gap-6">
+      <div id="design-list" className="grid scroll-mt-24 gap-4">
         <DesignFilters view={view} counts={counts} markets={overview.system.markets.map(({ code, name }) => ({ code, name }))} />
-        {filtered && counts[view] === 0 && (
-          <p className="admin-empty">No designs match these filters.</p>
+        <div className="admin-list-head">
+          <h2>{view === "all" ? "All designs" : heading} <span>{open.total}</span></h2>
+          <p>{hint[view]}</p>
+        </div>
+        {open.designs.length === 0 ? (
+          <div className="admin-empty">
+            <span className="admin-empty-icon" aria-hidden="true">◧</span>
+            <strong>{filtered ? "No designs match these filters" : "No designs yet"}</strong>
+            <span>{filtered ? "Try another status, market or search." : "Designs appear here as soon as clients start them."}</span>
+            {filtered && <Link href="?#design-list" scroll={false} className="btn btn-outline min-h-10">Show all designs</Link>}
+          </div>
+        ) : (
+          <ul className="admin-tiles">
+            {open.designs.map((design) => <DesignTile key={design.id} design={design} />)}
+          </ul>
         )}
-        {shows("review") && (view === "review" || ready.length > 0 || !filtered) && (
-          <DesignGroup title="Complete · ready for review" id="ready" designs={ready} empty="Submitted designs appear here after passing validation." />
+        {open.param ? (
+          <ShowMore query={query} param={open.param} shown={open.designs.length} total={open.total} anchor="design-list" />
+        ) : open.total > open.designs.length && (
+          <p className="text-sm text-mid">Showing the latest {open.designs.length} of {open.total} submitted designs.</p>
         )}
-        {shows("checking") && (view === "checking" || awaiting.length > 0 || !filtered) && (
-          <DesignGroup title="Checking · awaiting validation" id="awaiting" designs={awaiting} empty="No designs." />
-        )}
-        {(shows("review") || shows("checking")) && submitted.total > submitted.designs.length && (
-          <p className="text-sm text-mid">Showing the latest {submitted.designs.length} of {submitted.total} submitted designs.</p>
-        )}
-        {PAGED_GROUPS.map((group, i) => shows(group.param as DesignView) && (view === group.param || paged[i]!.total > 0 || !filtered) && (
-          <DesignGroup key={group.status} title={group.param === "drafts" ? "Drafts · not complete" : group.title} id={group.param} designs={paged[i]!.designs}
-            total={paged[i]!.total} empty={group.empty}>
-            <ShowMore query={query} param={group.param} shown={paged[i]!.designs.length} total={paged[i]!.total} anchor={group.param} />
-          </DesignGroup>
-        ))}
       </div>
     </div>
   );
 }
 
-function DesignGroup({ title, id, designs, total = designs.length, empty, children }: {
-  title: string;
-  id: string;
-  designs: AdminDesign[];
-  total?: number;
-  empty: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="grid scroll-mt-24 gap-3">
-      <h2 className="admin-group-title">{title} <span>{total}</span></h2>
-      {designs.length === 0 && <p className="text-sm text-mid">{empty}</p>}
-      {designs.map((design) => <DesignCard key={design.id} design={design} />)}
-      {children}
-    </section>
-  );
-}
+const TILE_STATUS: Record<DesignStatus, { label: string; tone: string }> = {
+  DRAFT: { label: "Draft", tone: "draft" },
+  SUBMITTED: { label: "Submitted", tone: "review" },
+  CHANGES_REQUESTED: { label: "Changes requested", tone: "changes" },
+  APPROVED: { label: "Approved", tone: "approved" },
+};
 
-function DesignCard({ design }: { design: AdminDesign }) {
+/** A design as a small tile: label picture, name, company, market and check. The detail opens on click. */
+function DesignTile({ design }: { design: AdminDesign }) {
   const version = design.versions[0];
-  const content = version?.content;
   const validation = version?.validationResults[0];
-  const comment = version?.approvals[0]?.comment;
-
+  const status = TILE_STATUS[design.status];
+  const check = design.status !== "SUBMITTED" ? null
+    : !validation ? { label: "Checking", tone: "" } : validation.passed ? { label: "✓ Checklist complete", tone: "good" } : { label: `${validation.issues.length} to fix`, tone: "bad" };
   return (
-    <article id={"design-" + design.id} className="admin-design grid gap-6 md:grid-cols-2">
-      <div className="grid content-start gap-3">
-        <div>
-          <h3 className="text-xl">{design.name}</h3>
-          <p className="text-sm text-mid">{design.organization.name} · {design.template.name} · {design.market.name}</p>
-        </div>
-        <StatusBadge status={design.status} />
-        <p className="text-sm text-mid">Created by {design.createdBy.name} · {design.createdBy.email}</p>
-        {(content?.fields.saleLocation || content?.fields.salesChannel) && <p className="text-sm text-mid">Sales destination: {[design.market.name, content.fields.saleLocation, content.fields.salesChannel].filter(Boolean).join(" · ")}</p>}
-        {version && (
-          <p className="text-sm">
-            Version {version.number} · {validation ? (validation.passed ? "Checklist complete" : "Checklist incomplete") : "No market-check result"}
-          </p>
-        )}
-        {!!validation?.issues.length && (
-          <ul className="list-disc pl-5 text-sm text-danger">
-            {validation.issues.map((issue) => <li key={issue.field}>{issue.message}</li>)}
-          </ul>
-        )}
-        {comment && <p className="whitespace-pre-wrap break-words text-sm">Message to client: {comment}</p>}
-        {design.status === "SUBMITTED" && version && validation?.passed && (
-          <ReviewActions key={version.id} designId={design.id} versionId={version.id} admin />
-        )}
-        {design.status === "SUBMITTED" && version && !validation && (
-          <ValidateDesignButton key={version.id} designId={design.id} versionId={version.id} />
-        )}
-        <AdminDeleteAction id={design.id} type="design" name={design.name} />
-      </div>
-      {version && (
-        <ReviewPreview content={version.content} template={design.template} marketCode={design.market.code} />
-      )}
-    </article>
+    <li>
+      <Link href={`/studio/admin/designs/${design.id}`} className="admin-tile" data-tone={status.tone}>
+        <span className="admin-tile-art">
+          {version ? <LabelThumb content={version.content} template={design.template} /> : <span className="text-xs text-mid">No artwork</span>}
+          <span className="studio-project-status" data-tone={status.tone}>{status.label}</span>
+        </span>
+        <span className="admin-tile-body">
+          <span className="admin-tile-name" title={design.name}>{design.name}</span>
+          <span className="admin-tile-org">{design.organization.name}</span>
+          <span className="admin-tile-tags">
+            <span className="studio-project-market">{design.market.code} · {design.market.name}</span>
+            {check && <span className={`admin-pill ${check.tone === "good" ? "admin-pill-good" : check.tone === "bad" ? "admin-pill-bad" : ""}`}>{check.label}</span>}
+          </span>
+          <span className="admin-tile-foot">
+            <span>v{version?.number ?? 0} · {new Date(design.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
+            <span className="admin-tile-open">Open →</span>
+          </span>
+        </span>
+      </Link>
+    </li>
   );
 }
 

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import oussoulMark from "@/assets/images/studio/oussoul-mark.png";
 import { AssetLibrary } from "@/components/studio/AssetLibrary";
+import { BarcodeHint } from "@/components/studio/BarcodeHint";
 import { ColorField } from "@/components/studio/ColorField";
+import { defaultBarHeight, MIN_BAR_MM, MODULE_MM, moduleFor, nominalBarHeight, symbolModules } from "@/lib/studio/barcode";
 import { FOCUS_FIELD_EVENT, focusText, type FocusFieldDetail } from "@/lib/studio/focus-field";
 import { FONTS, loadFonts } from "@/lib/studio/fonts";
 import {
-  fitLayout, inkFor, labelSize, newId, prepare, PT, renderLabel, SAFE_MARGIN, templateLayout, textHeight,
+  barcodeOf, fitLayout, inkFor, labelSize, newId, prepare, PT, renderLabel, SAFE_MARGIN, templateLayout, textHeight,
   type LabelElement, type Layout,
 } from "@/lib/studio/layout";
 import type { DesignContent, Template } from "@/lib/studio/types";
@@ -385,7 +387,16 @@ export function LabelEditor({
       w = Math.max(1, w);
       h = Math.max(.5, h);
       changes = { x: round(x, .05), y: round(y, .05), w: round(w, .05) };
-      if (textual(o)) {
+      const code = barcodeOf(o, content);
+      if (code) {
+        // A barcode: the sides set its size (bar width), the top and bottom its bar height.
+        const pad = o.padding ?? 0;
+        const bar = o.barHeight ?? defaultBarHeight(code, moduleFor(code, o.w - pad * 2));
+        const delta = hd.includes("s") ? dy : hd.includes("n") ? -dy : 0;
+        if (delta) changes.barHeight = round(Math.min(60, Math.max(MIN_BAR_MM, bar + delta)), .1);
+        changes.h = textHeight({ ...o, ...changes } as LabelElement, content);
+        if (hd.includes("n")) changes.y = round(o.y + o.h - changes.h, .05);
+      } else if (textual(o)) {
         // Text frames take their height from the wording; a corner scales the type with the frame.
         if (corner) changes.size = Math.max(3, round((o.size ?? 9) * (w / o.w), .1));
         changes.h = textHeight({ ...o, ...changes } as LabelElement, content);
@@ -545,7 +556,7 @@ export function LabelEditor({
                   onDoubleClick={() => document.getElementById("le-text")?.focus()}
                   onContextMenu={(event) => openMenu(event, e.id)}>
                   {e.id === selected && editable && !e.locked && (<>
-                    {HANDLES.filter((hd) => !textual(e) || !["n", "s"].includes(hd)).map((hd) => (
+                    {HANDLES.filter((hd) => !textual(e) || barcodeOf(e, content) || !["n", "s"].includes(hd)).map((hd) => (
                       <span key={hd} className="le-handle" style={{ left: `${HANDLE_POS[hd][0] * 100}%`, top: `${HANDLE_POS[hd][1] * 100}%`, cursor: CURSOR[hd] }}
                         onPointerDown={(event) => begin(event, { kind: "resize", id: e.id, handle: hd, start: toMm(event), origin: e, before: layout })} />
                     ))}
@@ -581,8 +592,45 @@ export function LabelEditor({
                       const next = { ...content, fields: { ...content.fields, [element.field!]: e.target.value } };
                       onChange({ ...next, artwork: { font: "sans", panels: {}, ...next.artwork, layout: { ...next.artwork?.layout, unit: fitLayout(layout, next) } } });
                     }} />
+                  {element.field === "barcode" && (
+                    <BarcodeHint text={content.fields.barcode ?? ""} widthMm={element.w - (element.padding ?? 0) * 2} barHeight={element.barHeight} />
+                  )}
                 </label>
               )}
+              {(() => {
+                const code = barcodeOf(element, content);
+                if (!code) return null;
+                const pad = element.padding ?? 0;
+                const moduleMm = moduleFor(code, element.w - pad * 2);
+                const percent = Math.round((moduleMm / MODULE_MM) * 100);
+                const bar = element.barHeight ?? defaultBarHeight(code, moduleMm);
+                const setSize = (value: number) => {
+                  const w = symbolModules(code) * MODULE_MM * Math.min(200, Math.max(60, value)) / 100 + pad * 2;
+                  patch(element.id, { w: round(w, .05), x: round(element.x + (element.w - w) / 2, .05) });
+                };
+                return (
+                  <div className="studio-barcode-panel">
+                    <span className="ws-section-title">Barcode size</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {num("Size", percent, setSize, { unit: "%", step: 5, min: 60, max: 200 })}
+                      {num("Bar height", bar, (v) => patch(element.id, { barHeight: Math.min(60, Math.max(MIN_BAR_MM, v)) }), { unit: "mm", step: .5, min: MIN_BAR_MM, max: 60 })}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[80, 100, 120].map((p) => (
+                        <button key={p} type="button" className="le-tool le-mini" aria-pressed={percent === p} onClick={() => setSize(p)}>{p}%</button>
+                      ))}
+                      <button type="button" className="le-tool le-mini" onClick={() => patch(element.id, { barHeight: undefined })} title="Half the GS1 height">Short bars</button>
+                      <button type="button" className="le-tool le-mini" onClick={() => patch(element.id, { barHeight: Math.round(nominalBarHeight(code, moduleMm) * 10) / 10 })} title="The full GS1 height">Full height</button>
+                    </div>
+                    <span className="ws-section-title">Number under the bars</span>
+                    <div className="flex flex-wrap gap-1">
+                      <button type="button" className="le-tool le-mini" aria-pressed={(element.barcodeStyle ?? "gs1") === "gs1"} onClick={() => patch(element.id, { barcodeStyle: "gs1" })}>Retail (GS1)</button>
+                      <button type="button" className="le-tool le-mini" aria-pressed={element.barcodeStyle === "simple"} onClick={() => patch(element.id, { barcodeStyle: "simple" })}>Simple, centred</button>
+                    </div>
+                    <span className="text-xs text-mid">Drag the sides of the block to change the size, and its top or bottom to change the bar height.</span>
+                  </div>
+                );
+              })()}
               {element.type === "text" && (
                 <label className="field text-xs">Text
                   <textarea id="le-text" className="input py-1.5 text-sm" rows={3} maxLength={2000} value={element.text ?? ""}

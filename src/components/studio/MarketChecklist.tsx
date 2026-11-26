@@ -32,7 +32,7 @@ function withKeys(results: CheckResult[]): Keyed[] {
  * field opens the step that edits it and selects the text to replace. A check fixed while typing turns
  * green and stays in view for a moment, so the client sees it pass.
  */
-export function MarketChecklist({ designId, content, only, onField, onResults, title }: {
+export function MarketChecklist({ designId, content, only, onField, onResults, onPlace, title }: {
   designId: string;
   content: DesignContent;
   /** Show only the checks of these fields (and the layout checks, which name no field). */
@@ -41,6 +41,8 @@ export function MarketChecklist({ designId, content, only, onField, onResults, t
   onField?: (key: string) => void;
   /** Every result of the latest run, for messages next to the fields. */
   onResults?: (results: CheckResult[]) => void;
+  /** Puts fields that have text but no block back on the label. */
+  onPlace?: (fields: string[]) => void;
   title?: string;
 }) {
   const [raw, setResults] = useState<CheckResult[] | null>(null);
@@ -102,6 +104,7 @@ export function MarketChecklist({ designId, content, only, onField, onResults, t
   const sorted = [...results].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
   const count = (status: CheckResult["status"]) => results.filter((r) => r.status === status).length;
   const isFixed = (result: Keyed) => result.status === "pass" && result.key in fixed;
+  const missing = onPlace ? [...new Set(results.filter((r) => r.code === "notPlaced" && r.field).map((r) => r.field!))] : [];
   const focus = (field?: string) => {
     if (!field) return;
     onField?.(field);
@@ -121,12 +124,17 @@ export function MarketChecklist({ designId, content, only, onField, onResults, t
           {failed ? "Could not re-check, trying again…" : checking ? "Checking your changes…" : "Up to date"}
         </span>
       </p>
+      {missing.length > 1 && (
+        <button type="button" className="studio-place-all" onClick={() => onPlace!(missing)}>
+          ＋ Add all {missing.length} missing to the label
+        </button>
+      )}
       {[sorted.filter((r) => r.status !== "pass" || isFixed(r)), sorted.filter((r) => r.status === "pass" && !isFixed(r))].map((group, n) => {
         if (!group.length) return null;
         const list = (
           <ul className="grid gap-1.5">
             {group.map((result) => (
-              <li key={result.key}>
+              <li key={result.key} className="studio-check-row">
                 <button type="button" disabled={!result.field} onClick={() => focus(result.field)}
                   title={result.field && result.status !== "pass" ? "Go to this text and fix it" : undefined}
                   className={`studio-check flex w-full gap-2 rounded-lg px-2 py-1 text-left text-sm enabled:cursor-pointer enabled:hover:bg-sand ${isFixed(result) ? "studio-check-fixed" : ""}`}>
@@ -136,8 +144,13 @@ export function MarketChecklist({ designId, content, only, onField, onResults, t
                     {isFixed(result) && <span className="studio-fixed-tag">Fixed</span>}
                     {result.status !== "pass" && result.message && <span className="block text-mid">{result.message}</span>}
                   </span>
-                  {result.field && result.status !== "pass" && <span aria-hidden="true" className="studio-check-go">Fix →</span>}
+                  {result.field && result.status !== "pass" && result.code !== "notPlaced" && <span aria-hidden="true" className="studio-check-go">Fix →</span>}
                 </button>
+                {onPlace && result.code === "notPlaced" && result.field && (
+                  <button type="button" className="studio-place" onClick={() => onPlace([result.field!])} title={`Put ${result.label} back on the label`}>
+                    ＋ Add to label
+                  </button>
+                )}
               </li>
             ))}
           </ul>

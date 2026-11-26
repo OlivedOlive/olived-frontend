@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AssetLibrary } from "@/components/studio/AssetLibrary";
+import { BarcodeHint } from "@/components/studio/BarcodeHint";
 import { LabelEditor } from "@/components/studio/LabelEditor";
 import { MarketChecklist } from "@/components/studio/MarketChecklist";
 import { PackagingPreview, PARTS } from "@/components/studio/PackagingPreview";
 import { Steps, type ProjectStep } from "@/components/studio/Steps";
 import { defaultPanel, fillCopy, getPackaging } from "@/lib/studio/label-artwork";
-import { fitLayout } from "@/lib/studio/layout";
+import { requestField } from "@/lib/studio/focus-field";
+import { fitLayout, layoutOf, placeFields } from "@/lib/studio/layout";
 import { postJson } from "@/lib/studio/post";
 import type { Artwork, CheckResult, DesignContent, DesignDetail, PackagePart, Panel, PanelFace } from "@/lib/studio/types";
 
@@ -139,6 +141,25 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   const stepEmpty = emptyWithTemplate.filter(({ key }) => stepOf(key) === step);
   const variant = design.template.variant;
   const openField = (key: string) => setStep(stepOf(key));
+  /** Sides of the label, by position: 0 left side, 1 front, 2 right side. */
+  const SIDE_NAMES = ["left side", "front", "right side"];
+  const fallbackPanel = (key: string): 0 | 1 | 2 => (stepOf(key) === "front" ? 1 : key === "nutrition" || key === "categoryStatement" ? 2 : 0);
+
+  /** Puts fields that have text but no block back on the label, then shows the first one selected. */
+  function placeMissing(keys: string[]) {
+    const wanted = keys.map((key) => ({ key, label: fields.find((f) => f.key === key)?.label }));
+    const { layout, placed } = placeFields(layoutOf(content, design.template, line), content, design.template, line, wanted, fallbackPanel);
+    if (!placed.length) return;
+    change({ ...content, artwork: { ...artwork, layout: { ...artwork.layout, unit: layout } } });
+    const first = keys[0]!;
+    const sides = [...new Set(keys.map((key) => {
+      const block = layout.elements.find((e) => e.field === key);
+      return block ? SIDE_NAMES[Math.min(2, Math.floor(((block.x + block.w / 2) / (Number(design.template.widthMm) || 170)) * 3))] : "";
+    }).filter(Boolean))];
+    setMessage(`Added ${keys.length > 1 ? `${keys.length} blocks` : wanted[0]!.label ?? "the block"} to the ${sides.join(" and ")}. Move it where you like.`);
+    setStep(stepOf(first));
+    requestField(first);
+  }
 
   const fieldList = (
     <div className="grid gap-3">
@@ -164,7 +185,13 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
               rows={Math.min(10, Math.max(1, value.split("\n").length, Math.ceil(value.length / 48)))}
               value={value} disabled={!editable || busy} maxLength={2000} placeholder={templateCopy[key]}
               onChange={(e) => change({ ...content, fields: { ...content.fields, [key]: e.target.value } })} />
-            {issue ? <span className={`font-normal ${issue.severity === "warning" ? "text-gold" : "text-danger"}`}>{issue.message}</span>
+            {key === "barcode" && <BarcodeHint text={value} />}
+            {problem?.code === "notPlaced" && editable ? (
+              <span className="flex flex-wrap items-center gap-2 font-normal text-danger">
+                Not on the label.
+                <button type="button" className="studio-place" disabled={busy} onClick={(e) => { e.preventDefault(); placeMissing([key]); }}>＋ Add to label</button>
+              </span>
+            ) : issue ? <span className={`font-normal ${issue.severity === "warning" ? "text-gold" : "text-danger"}`}>{issue.message}</span>
               : live && own.length > 0 && <span className="font-normal text-success">✓ OK for {design.market.name}</span>}
           </label>
         );
@@ -267,7 +294,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
             {editable && (
               <div className="card p-4">
                 <MarketChecklist designId={design.id} content={content} only={stepFields.map(({ key }) => key)}
-                  onField={openField} onResults={setLive} title={`Checks for ${step === "front" ? "the front" : "the sides"}`} />
+                  onField={openField} onResults={setLive} onPlace={editable ? placeMissing : undefined} title={`Checks for ${step === "front" ? "the front" : "the sides"}`} />
               </div>
             )}
             <PackagingPreview key={step} content={content} template={design.template} part="unit" face={face} onFace={setFace}
@@ -282,7 +309,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
           <div className="card grid content-start gap-4">
             <h2 className="text-3xl">3D check & submit</h2>
             <p className="text-sm text-mid">Turn the bottle to check every side. When the checklist is complete, submit the design: the OLIVED team reviews it before printing.</p>
-            {editable && <MarketChecklist designId={design.id} content={content} onField={openField} onResults={setLive} />}
+            {editable && <MarketChecklist designId={design.id} content={content} onField={openField} onResults={setLive} onPlace={placeMissing} />}
             <p className="text-sm text-mid">
               The checks guide compliance with {design.market.name}&apos;s labelling rules. The destination&apos;s regulatory sign-off is still required before printing.
               {rules?.source && <> <a href={rules.source} target="_blank" rel="noreferrer" className="underline">Official source</a>.</>}
