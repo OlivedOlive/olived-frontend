@@ -39,10 +39,57 @@ export function checkDigit(body: string) {
  * anywhere in the text ("EAN 619 1234 567890"). Brackets mean a placeholder, so there is none yet.
  */
 export function barcodeNumber(text: string) {
-  if (/\[[^\]]*\]/.test(text)) return null;
-  const match = /(?:^|[^\d])((?:\d[\s-]?){7,12}\d)(?!\d)/.exec(text);
-  const digits = match?.[1]?.replace(/[\s-]/g, "") ?? "";
+  const match = /(?:^|[^\d])((?:\d[\s.-]?){7,12}\d)(?!\d)/.exec(withoutPlaceholders(text));
+  const digits = match?.[1]?.replace(/[\s.-]/g, "") ?? "";
   return [8, 12, 13].includes(digits.length) ? digits : null;
+}
+
+/** Arabic-Indic and Persian digits as 0-9, so a number typed on an Arabic keyboard is read too. */
+export function westernDigits(text: string) {
+  return text.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+}
+
+/** The text without the template's [placeholders], with Western digits. */
+export const withoutPlaceholders = (text: string) => westernDigits(text).replace(/\[[^\]]*\]/g, " ");
+
+/** The text still holds a [placeholder] from the template. */
+export const hasPlaceholder = (text: string) => /\[[^\]]*\]/.test(text);
+
+/** All the digits typed, outside placeholders. */
+export const typedDigits = (text: string) => withoutPlaceholders(text).replace(/\D/g, "");
+
+/**
+ * GS1 offices by the first three digits of an EAN-13 (a UPC-A reads as 0 + its first two digits).
+ * A prefix shows which GS1 office licensed the number to the brand owner, not where the product is made
+ * or sold. Source: GS1 prefix list (as published on Wikipedia, "List of GS1 country codes").
+ */
+const OFFICES: [number, number, string][] = [
+  [1, 19, "GS1 US"], [60, 139, "GS1 US"], [300, 379, "GS1 France"], [400, 440, "GS1 Germany"], [450, 459, "GS1 Japan"],
+  [460, 469, "GS1 Russia"], [471, 471, "GS1 Taiwan"], [490, 499, "GS1 Japan"], [500, 509, "GS1 UK"], [619, 619, "GS1 Tunisia"],
+  [627, 627, "GS1 Kuwait"], [628, 628, "GS1 Saudi Arabia"], [629, 629, "GS1 UAE"], [630, 630, "GS1 Qatar"], [754, 755, "GS1 Canada"],
+];
+
+/** The GS1 office a number comes from, or a note when it is a restricted (in-store) number. */
+export function gs1Office(digits: string): { prefix: string; office: string | null; restricted: boolean } {
+  const prefix = (digits.length === 12 ? `0${digits}` : digits).slice(0, 3);
+  const value = Number(prefix);
+  const restricted = (value >= 200 && value <= 299) || (value >= 20 && value <= 29) || (value >= 40 && value <= 49);
+  return { prefix, office: OFFICES.find(([from, to]) => value >= from && value <= to)?.[2] ?? null, restricted };
+}
+
+/** The retail barcode each market's tills expect, and who to ask there. */
+export const MARKET_BARCODES: Record<string, { kind: "EAN-13" | "UPC-A"; note: string }> = {
+  US: { kind: "UPC-A", note: "US retailers use UPC-A (12 digits). Most US tills also scan EAN-13; ask your retailer which they want." },
+  CA: { kind: "UPC-A", note: "Canadian retailers use UPC-A (12 digits) or EAN-13; ask your retailer which they want." },
+};
+export const marketBarcode = (code: string) => MARKET_BARCODES[code] ?? {
+  kind: "EAN-13" as const, note: "Retailers in this market scan EAN-13 (13 digits).",
+};
+
+/** The full number with its GS1 check digit, from the digits before it (11 for UPC-A, 12 for EAN-13). */
+export function withCheckDigit(body: string) {
+  return body + checkDigit(body);
 }
 
 export type BarcodeStatus =
@@ -52,10 +99,7 @@ export type BarcodeStatus =
 /** Reads a field's text: a drawable barcode, or why there is none. */
 export function readBarcode(text: string): BarcodeStatus {
   const digits = barcodeNumber(text);
-  if (!digits) {
-    const loose = text.replace(/\[[^\]]*\]/g, "").replace(/[^\d]/g, "");
-    return { ok: false, reason: loose.length >= 6 ? "length" : "none" };
-  }
+  if (!digits) return { ok: false, reason: typedDigits(text).length >= 6 ? "length" : "none" };
   const expected = checkDigit(digits.slice(0, -1));
   if (expected !== digits.at(-1)) return { ok: false, reason: "checkDigit", expected };
   return { ok: true, barcode: encode(digits) };

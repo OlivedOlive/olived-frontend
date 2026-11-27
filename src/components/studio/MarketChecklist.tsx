@@ -32,7 +32,7 @@ function withKeys(results: CheckResult[]): Keyed[] {
  * field opens the step that edits it and selects the text to replace. A check fixed while typing turns
  * green and stays in view for a moment, so the client sees it pass.
  */
-export function MarketChecklist({ designId, content, only, onField, onResults, onPlace, title }: {
+export function MarketChecklist({ designId, content, only, onField, onResults, onPlace, onTextSize, title }: {
   designId: string;
   content: DesignContent;
   /** Show only the checks of these fields (and the layout checks, which name no field). */
@@ -43,6 +43,8 @@ export function MarketChecklist({ designId, content, only, onField, onResults, o
   onResults?: (results: CheckResult[]) => void;
   /** Puts fields that have text but no block back on the label. */
   onPlace?: (fields: string[]) => void;
+  /** Enlarges the blocks that are too small, to the size each needs. */
+  onTextSize?: (sizes: Record<string, number>) => void;
   title?: string;
 }) {
   const [raw, setResults] = useState<CheckResult[] | null>(null);
@@ -144,8 +146,14 @@ export function MarketChecklist({ designId, content, only, onField, onResults, o
                     {isFixed(result) && <span className="studio-fixed-tag">Fixed</span>}
                     {result.status !== "pass" && result.message && <span className="block text-mid">{result.message}</span>}
                   </span>
-                  {result.field && result.status !== "pass" && result.code !== "notPlaced" && <span aria-hidden="true" className="studio-check-go">Fix →</span>}
+                  {result.field && result.status !== "pass" && !result.code && <span aria-hidden="true" className="studio-check-go">Fix →</span>}
                 </button>
+                {onTextSize && result.code === "textSize" && result.sizes && (
+                  <button type="button" className="studio-place" onClick={() => onTextSize(result.sizes!)}
+                    title="Enlarge every block in this list to the size it needs">
+                    Make the text big enough
+                  </button>
+                )}
                 {onPlace && result.code === "notPlaced" && result.field && (
                   <button type="button" className="studio-place" onClick={() => onPlace([result.field!])} title={`Put ${result.label} back on the label`}>
                     ＋ Add to label

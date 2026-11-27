@@ -435,3 +435,41 @@ export function placeFields(
   }
   return { layout: { ...layout, elements }, placed };
 }
+
+/**
+ * Raises the point size of the blocks of these fields to the size each needs, refits their heights, then
+ * moves blocks further down the same side when the bigger text now runs into them. Only blocks below an
+ * enlarged one move; background shapes stay where they are.
+ */
+export function enlargeText(layout: Layout, content: DesignContent, sizes: Record<string, number>, labelWidth: number) {
+  const third = labelWidth / 3;
+  const grown = new Set<string>();
+  let elements = layout.elements.map((e) => {
+    const needed = e.field ? sizes[e.field] : undefined;
+    if (!needed || (e.size ?? 9) >= needed) return e;
+    grown.add(e.id);
+    return { ...e, size: needed };
+  });
+  elements = fitLayout({ ...layout, elements }, content).elements;
+  const panelOf = (e: LabelElement) => Math.min(2, Math.max(0, Math.floor((e.x + e.w / 2) / third)));
+  const flows = (e: LabelElement) => !e.hidden && e.type !== "shape";
+  const moved = new Set(grown);
+  const byId = new Map(elements.map((e) => [e.id, e]));
+  for (const panel of [0, 1, 2]) {
+    const column = elements.filter((e) => flows(e) && panelOf(e) === panel).sort((a, b) => a.y - b.y);
+    for (let i = 0; i < column.length; i++) {
+      const current = byId.get(column[i]!.id)!;
+      for (let j = 0; j < i; j++) {
+        const above = byId.get(column[j]!.id)!;
+        const sideBySide = current.x < above.x + above.w && above.x < current.x + current.w;
+        const touching = current.y < above.y + above.h + .6;
+        if (sideBySide && touching && moved.has(above.id)) {
+          const next = { ...current, y: Math.round((above.y + above.h + 1) * 20) / 20 };
+          byId.set(current.id, next);
+          moved.add(current.id);
+        }
+      }
+    }
+  }
+  return { layout: { ...layout, elements: elements.map((e) => byId.get(e.id) ?? e) }, grown: grown.size };
+}

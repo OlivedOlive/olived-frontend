@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AssetLibrary } from "@/components/studio/AssetLibrary";
 import { BarcodeHint } from "@/components/studio/BarcodeHint";
+import { PlaceholderFill } from "@/components/studio/PlaceholderFill";
+import { DesignMessages } from "@/components/studio/DesignMessages";
+import { FieldHelp, StepGuide } from "@/components/studio/FieldHelp";
 import { LabelEditor } from "@/components/studio/LabelEditor";
 import { MarketChecklist } from "@/components/studio/MarketChecklist";
 import { PackagingPreview, PARTS } from "@/components/studio/PackagingPreview";
 import { Steps, type ProjectStep } from "@/components/studio/Steps";
 import { defaultPanel, fillCopy, getPackaging } from "@/lib/studio/label-artwork";
 import { requestField } from "@/lib/studio/focus-field";
-import { fitLayout, layoutOf, placeFields } from "@/lib/studio/layout";
+import { enlargeText, fitLayout, labelSize, layoutOf, placeFields } from "@/lib/studio/layout";
 import { postJson } from "@/lib/studio/post";
 import type { Artwork, CheckResult, DesignContent, DesignDetail, PackagePart, Panel, PanelFace } from "@/lib/studio/types";
 
@@ -68,7 +71,11 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   const review = version?.approvals[0];
   const editable = design.status === "DRAFT" || design.status === "CHANGES_REQUESTED";
   const checking = design.status === "SUBMITTED" && !validation;
-  const [step, setStep] = useState<ProjectStep>(editable ? "front" : "review");
+  // A notification opens a given step (?step=review for a decision or a reply).
+  const asked = useSearchParams().get("step");
+  const [step, setStep] = useState<ProjectStep>(
+    ORDER.includes(asked as ProjectStep) ? (asked as ProjectStep) : editable ? "front" : "review",
+  );
 
   // The market check runs in the background, so reload until its result arrives.
   useEffect(() => {
@@ -145,6 +152,15 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
   const SIDE_NAMES = ["left side", "front", "right side"];
   const fallbackPanel = (key: string): 0 | 1 | 2 => (stepOf(key) === "front" ? 1 : key === "nutrition" || key === "categoryStatement" ? 2 : 0);
 
+  /** Enlarges the blocks the text height check names, then says what changed. */
+  function fixTextSize(sizes: Record<string, number>) {
+    const { layout, grown } = enlargeText(layoutOf(content, design.template, line), content, sizes, labelSize(design.template).width);
+    if (!grown) return;
+    change({ ...content, artwork: { ...artwork, layout: { ...artwork.layout, unit: layout } } });
+    const biggest = Math.max(...Object.values(sizes));
+    setMessage(`Enlarged ${grown} block${grown > 1 ? "s" : ""} to at least ${biggest} pt; blocks below moved down. Check that everything still fits on its side.`);
+  }
+
   /** Puts fields that have text but no block back on the label, then shows the first one selected. */
   function placeMissing(keys: string[]) {
     const wanted = keys.map((key) => ({ key, label: fields.find((f) => f.key === key)?.label }));
@@ -160,6 +176,14 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
     setStep(stepOf(first));
     requestField(first);
   }
+
+  const marketRef = { code: design.market.code, name: design.market.name };
+  /** The "?" guide of a field, with the market template's wording to start from. */
+  const helpFor = (key: string, label: string) => (
+    <FieldHelp field={key} label={label} market={marketRef} required={requiredFields.some((f) => f.key === key)}
+      templateText={templateCopy[key]} current={content.fields[key] ?? ""}
+      onUseTemplate={editable ? (text) => change({ ...content, fields: { ...content.fields, [key]: text } }) : undefined} />
+  );
 
   const fieldList = (
     <div className="grid gap-3">
@@ -179,13 +203,21 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
           : issues.find((i) => i.field === key);
         const value = content.fields[key] ?? "";
         return (
-          <label key={key} className="field">
-            {label}
+          <label key={key} className="field studio-field-with-help">
+            <span className="studio-field-head">{label}</span>
+            {helpFor(key, label)}
             <textarea id={`field-${key}`} className="input py-2"
               rows={Math.min(10, Math.max(1, value.split("\n").length, Math.ceil(value.length / 48)))}
               value={value} disabled={!editable || busy} maxLength={2000} placeholder={templateCopy[key]}
               onChange={(e) => change({ ...content, fields: { ...content.fields, [key]: e.target.value } })} />
-            {key === "barcode" && <BarcodeHint text={value} />}
+            {editable && (
+              <PlaceholderFill text={value} idKey={key} onChange={(text) => change({ ...content, fields: { ...content.fields, [key]: text } })} />
+            )}
+            {key === "barcode" && (
+              <BarcodeHint text={value} market={{ code: design.market.code, name: design.market.name }}
+                olivedBrand={Boolean(line) || slug === "oussoul"}
+                onChange={editable ? (text) => change({ ...content, fields: { ...content.fields, barcode: text } }) : undefined} />
+            )}
             {problem?.code === "notPlaced" && editable ? (
               <span className="flex flex-wrap items-center gap-2 font-normal text-danger">
                 Not on the label.
@@ -271,6 +303,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
       {(step === "front" || step === "sides") && (
         <div className="studio-workspace">
           <LabelEditor key={step} focus={step} content={content} template={design.template} line={line} editable={editable && !busy}
+            market={marketRef} fieldHelp={(key) => helpFor(key, fields.find((f) => f.key === key)?.label ?? key)}
             fields={stepFields} onChange={change}
             header={
               <div className="ws-head">
@@ -285,6 +318,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
             footer={navigation}
             sidebar={
               <div className="grid gap-3">
+                <StepGuide step={step} />
                 <h3 className="ws-section-title">{step === "front" ? "Text on the front" : "Text on the sides"}</h3>
                 {fieldList}
                 <hr className="border-line" />
@@ -294,7 +328,7 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
             {editable && (
               <div className="card p-4">
                 <MarketChecklist designId={design.id} content={content} only={stepFields.map(({ key }) => key)}
-                  onField={openField} onResults={setLive} onPlace={editable ? placeMissing : undefined} title={`Checks for ${step === "front" ? "the front" : "the sides"}`} />
+                  onField={openField} onResults={setLive} onPlace={editable ? placeMissing : undefined} onTextSize={editable ? fixTextSize : undefined} title={`Checks for ${step === "front" ? "the front" : "the sides"}`} />
               </div>
             )}
             <PackagingPreview key={step} content={content} template={design.template} part="unit" face={face} onFace={setFace}
@@ -309,7 +343,8 @@ export function DesignEditor({ design }: { design: DesignDetail }) {
           <div className="card grid content-start gap-4">
             <h2 className="text-3xl">3D check & submit</h2>
             <p className="text-sm text-mid">Turn the bottle to check every side. When the checklist is complete, submit the design: the OLIVED team reviews it before printing.</p>
-            {editable && <MarketChecklist designId={design.id} content={content} onField={openField} onResults={setLive} onPlace={placeMissing} />}
+            {editable && <MarketChecklist designId={design.id} content={content} onField={openField} onResults={setLive} onPlace={placeMissing} onTextSize={fixTextSize} />}
+            <DesignMessages path={`/designs/${design.id}`} side="client" />
             <p className="text-sm text-mid">
               The checks guide compliance with {design.market.name}&apos;s labelling rules. The destination&apos;s regulatory sign-off is still required before printing.
               {rules?.source && <> <a href={rules.source} target="_blank" rel="noreferrer" className="underline">Official source</a>.</>}

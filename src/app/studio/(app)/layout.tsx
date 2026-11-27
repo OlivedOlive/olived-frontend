@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { KeepSession } from "@/components/studio/KeepSession";
 import { LogoutButton } from "@/components/studio/LogoutButton";
+import { NotificationBell } from "@/components/studio/NotificationBell";
 import { StudioMark } from "@/components/studio/StudioMark";
 import { StudioNav, type NavItem } from "@/components/studio/StudioNav";
 import { apiGet } from "@/lib/studio/api";
@@ -30,6 +31,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
             <Link href="/studio/designs/new" className="studio-topbar-new">
               <span aria-hidden="true">＋</span> New design
             </Link>
+            <NotificationBell />
             <Suspense fallback={<span className="studio-account studio-account-loading" aria-hidden />}>
               <Account />
             </Suspense>
@@ -57,11 +59,13 @@ async function Account() {
   const initials = me.user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join("") || "?";
   return (
     <div className="studio-account">
-      <span className="studio-avatar" aria-hidden="true">{initials}</span>
-      <span className="studio-account-text">
-        <span className="studio-account-name">{me.user.name}</span>
-        <span className="studio-account-org">{me.organization.name} · {ROLE_LABEL[me.role]}</span>
-      </span>
+      <Link href="/studio/account" className="studio-account-link" title="Your account and password">
+        <span className="studio-avatar" aria-hidden="true">{initials}</span>
+        <span className="studio-account-text">
+          <span className="studio-account-name">{me.user.name}</span>
+          <span className="studio-account-org">{me.organization.name} · {ROLE_LABEL[me.role]}</span>
+        </span>
+      </Link>
       <LogoutButton />
     </div>
   );

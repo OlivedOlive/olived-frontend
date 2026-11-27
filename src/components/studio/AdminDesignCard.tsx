@@ -1,4 +1,5 @@
 import { AdminDeleteAction } from "@/components/studio/AdminDeleteAction";
+import { DesignMessages } from "@/components/studio/DesignMessages";
 import { ReviewPreview } from "@/components/studio/PackagingPreview";
 import { ReviewActions } from "@/components/studio/ReviewActions";
 import { ValidateDesignButton } from "@/components/studio/ValidateDesignButton";
@@ -95,6 +96,8 @@ export function AdminDesignCard({ design }: { design: AdminDesign }) {
             <blockquote className="admin-quote">{approval.comment}</blockquote>
           </Section>
         )}
+
+        <DesignMessages path={`/admin/designs/${design.id}`} side="staff" />
 
         <div className="admin-sections">
           <Section title="Client">
