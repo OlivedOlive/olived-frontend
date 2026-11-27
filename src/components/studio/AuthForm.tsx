@@ -106,7 +106,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               const invalid = Boolean(fields[name]);
               return (
                 <label key={name} className="studio-auth-field">
-                  <span>{label}</span>
+                  <span className="flex items-center justify-between gap-2">
+                    {label}
+                    {isPassword && isLogin && <Link href="/studio/forgot" className="studio-auth-forgot">Forgot password?</Link>}
+                  </span>
                   <span className="studio-auth-input" data-invalid={invalid}>
                     <input name={name} type={isPassword && showPassword ? "text" : type} autoComplete={autoComplete}
                       placeholder={placeholder} required aria-invalid={invalid} minLength={isPassword && !isLogin ? 10 : undefined}

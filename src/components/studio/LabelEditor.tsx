@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import oussoulMark from "@/assets/images/studio/oussoul-mark.png";
 import { AssetLibrary } from "@/components/studio/AssetLibrary";
 import { BarcodeHint } from "@/components/studio/BarcodeHint";
+import { PlaceholderFill } from "@/components/studio/PlaceholderFill";
 import { ColorField } from "@/components/studio/ColorField";
 import { defaultBarHeight, MIN_BAR_MM, MODULE_MM, moduleFor, nominalBarHeight, symbolModules } from "@/lib/studio/barcode";
 import { FOCUS_FIELD_EVENT, focusText, type FocusFieldDetail } from "@/lib/studio/focus-field";
@@ -36,8 +37,12 @@ const round = (value: number, step = .1) => Math.round(value / step) * step;
  * real label, with folds, the safety margin and snapping shown while dragging.
  */
 export function LabelEditor({
-  content, template, line, editable, fields, onChange, focus, header, footer, sidebar,
+  content, template, line, editable, fields, onChange, focus, header, footer, sidebar, market, fieldHelp,
 }: {
+  /** The guide of a field, shown with its text when its block is selected. */
+  fieldHelp?: (field: string) => ReactNode;
+  /** The market the label is for, for the barcode guide. */
+  market?: { code: string; name: string };
   /** Shown above the toolbar, under the toolbar's card, and in the left column when nothing is selected. */
   header?: ReactNode;
   footer?: ReactNode;
@@ -185,10 +190,10 @@ export function LabelEditor({
       if (block) {
         setSelected(block.id);
         if (allowed.includes(panelAt(block.x + block.w / 2))) setActive(panelAt(block.x + block.w / 2));
-        setTimeout(() => focusText(document.getElementById("le-text") as HTMLTextAreaElement | null), 60);
+        setTimeout(() => focusText(document.getElementById(`fill-le-${detail.field}`) ?? document.getElementById("le-text")), 60);
       } else {
         setSelected(null);
-        setTimeout(() => focusText(document.getElementById(`field-${detail.field}`) as HTMLTextAreaElement | null), 60);
+        setTimeout(() => focusText(document.getElementById(`fill-${detail.field}`) ?? document.getElementById(`field-${detail.field}`)), 60);
       }
     };
     window.addEventListener(FOCUS_FIELD_EVENT, onFocusField);
@@ -586,14 +591,26 @@ export function LabelEditor({
                 <button type="button" className="le-tool le-mini" onClick={() => setSelected(null)} aria-label="Deselect">✕</button>
               </div>
               {element.type === "field" && (
-                <label className="field text-xs">{labelOf(element.field ?? "")} <span className="font-normal text-mid">(the same text as in the form)</span>
+                <label className="field studio-field-with-help text-xs"><span className="studio-field-head">{labelOf(element.field ?? "")} <span className="font-normal text-mid">(the same text as in the form)</span></span>
+                  {fieldHelp?.(element.field ?? "")}
                   <textarea id="le-text" className="input py-1.5 text-sm" rows={4} maxLength={2000} value={content.fields[element.field ?? ""] ?? ""}
                     onChange={(e) => {
                       const next = { ...content, fields: { ...content.fields, [element.field!]: e.target.value } };
                       onChange({ ...next, artwork: { font: "sans", panels: {}, ...next.artwork, layout: { ...next.artwork?.layout, unit: fitLayout(layout, next) } } });
                     }} />
+                  {editable && (
+                    <PlaceholderFill text={content.fields[element.field ?? ""] ?? ""} idKey={`le-${element.field}`} onChange={(text) => {
+                      const next = { ...content, fields: { ...content.fields, [element.field!]: text } };
+                      onChange({ ...next, artwork: { font: "sans", panels: {}, ...next.artwork, layout: { ...next.artwork?.layout, unit: fitLayout(layout, next) } } });
+                    }} />
+                  )}
                   {element.field === "barcode" && (
-                    <BarcodeHint text={content.fields.barcode ?? ""} widthMm={element.w - (element.padding ?? 0) * 2} barHeight={element.barHeight} />
+                    <BarcodeHint text={content.fields.barcode ?? ""} widthMm={element.w - (element.padding ?? 0) * 2} barHeight={element.barHeight}
+                      market={market} olivedBrand={Boolean(line) || template.variant?.product.slug === "oussoul"}
+                      onChange={(text) => {
+                        const next = { ...content, fields: { ...content.fields, barcode: text } };
+                        onChange({ ...next, artwork: { font: "sans", panels: {}, ...next.artwork, layout: { ...next.artwork?.layout, unit: fitLayout(layout, next) } } });
+                      }} />
                   )}
                 </label>
               )}

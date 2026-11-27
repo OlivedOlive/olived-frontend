@@ -54,8 +54,10 @@ export type CheckResult = {
   status: "pass" | "error" | "warning" | "unverified";
   message: string;
   field?: string;
-  /** "notPlaced": the field has its text but no block on the label. */
-  code?: "notPlaced";
+  /** "notPlaced": the field has its text but no block on the label. "textSize": blocks too small. */
+  code?: "notPlaced" | "textSize";
+  /** For "textSize": the point size each field's block needs in its typeface. */
+  sizes?: Record<string, number>;
 };
 export type RequiredField = { key: string; label: string };
 
